@@ -168,8 +168,8 @@ export function CreateItemTypeModal({ isOpen, onClose }: CreateItemTypeModalProp
                   <Label htmlFor={`unitsPerGroup-${index}`}>Units per Group</Label>
                   <Input
                     id={`unitsPerGroup-${index}`}
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="e.g., 16"
                     value={grouping.unitsPerGroup}
                     onChange={(e) => updateGrouping(index, 'unitsPerGroup', parseInt(e.target.value) || 1)}

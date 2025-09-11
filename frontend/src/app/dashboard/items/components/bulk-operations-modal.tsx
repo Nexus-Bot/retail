@@ -52,8 +52,8 @@ export function BulkOperationsModal({
     currentStatus: ItemStatus.IN_INVENTORY,
     newStatus: ItemStatus.WITH_EMPLOYEE,
     useGrouping: false,
-    quantity: 1,
-    groupQuantity: 1,
+    quantity: '1',
+    groupQuantity: '1',
     groupName: "",
     currentHolder: "",
     sellPrice: "",
@@ -112,9 +112,9 @@ export function BulkOperationsModal({
     // Add quantity or grouping
     if (bulkForm.useGrouping && bulkForm.groupName) {
       updateData.groupName = bulkForm.groupName;
-      updateData.groupQuantity = bulkForm.groupQuantity;
+      updateData.groupQuantity = parseInt(bulkForm.groupQuantity) || 1;
     } else {
-      updateData.quantity = bulkForm.quantity;
+      updateData.quantity = parseInt(bulkForm.quantity) || 1;
     }
 
     // Add conditional fields based on new status
@@ -141,8 +141,8 @@ export function BulkOperationsModal({
       currentStatus: ItemStatus.IN_INVENTORY,
       newStatus: ItemStatus.WITH_EMPLOYEE,
       useGrouping: false,
-      quantity: 1,
-      groupQuantity: 1,
+      quantity: '1',
+      groupQuantity: '1',
       groupName: "",
       currentHolder: "",
       sellPrice: "",
@@ -243,13 +243,13 @@ export function BulkOperationsModal({
             </div>
             {!bulkForm.useGrouping && (
               <Input
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
                 value={bulkForm.quantity}
                 onChange={(e) =>
                   setBulkForm({
                     ...bulkForm,
-                    quantity: parseInt(e.target.value) || 1,
+                    quantity: e.target.value,
                   })
                 }
                 placeholder="Enter quantity"
@@ -300,13 +300,13 @@ export function BulkOperationsModal({
                   <div className="space-y-2">
                     <Label htmlFor="groupQuantity">Number of Groups</Label>
                     <Input
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
                       value={bulkForm.groupQuantity}
                       onChange={(e) =>
                         setBulkForm({
                           ...bulkForm,
-                          groupQuantity: parseInt(e.target.value) || 1,
+                          groupQuantity: e.target.value,
                         })
                       }
                       placeholder="Enter number"
@@ -345,8 +345,8 @@ export function BulkOperationsModal({
             <div className="space-y-2">
               <Label htmlFor="sellPrice">Sell Price per Unit</Label>
               <Input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={bulkForm.sellPrice}
                 onChange={(e) =>
                   setBulkForm({ ...bulkForm, sellPrice: e.target.value })

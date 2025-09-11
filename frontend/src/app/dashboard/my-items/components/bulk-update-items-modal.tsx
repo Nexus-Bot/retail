@@ -25,8 +25,8 @@ interface BulkForm {
   currentStatus: ItemStatus;
   newStatus: ItemStatus;
   useGrouping: boolean;
-  quantity: number;
-  groupQuantity: number;
+  quantity: string;
+  groupQuantity: string;
   groupName: string;
   sellPrice: string;
   notes: string;
@@ -46,8 +46,8 @@ export function BulkUpdateItemsModal({
     currentStatus: ItemStatus.WITH_EMPLOYEE,
     newStatus: ItemStatus.SOLD,
     useGrouping: false,
-    quantity: 1,
-    groupQuantity: 1,
+    quantity: '1',
+    groupQuantity: '1',
     groupName: '',
     sellPrice: '',
     notes: ''
@@ -67,8 +67,8 @@ export function BulkUpdateItemsModal({
         currentStatus: ItemStatus.WITH_EMPLOYEE,
         newStatus: ItemStatus.SOLD,
         useGrouping: false,
-        quantity: 1,
-        groupQuantity: 1,
+        quantity: '1',
+        groupQuantity: '1',
         groupName: '',
         sellPrice: '',
         notes: ''
@@ -97,9 +97,9 @@ export function BulkUpdateItemsModal({
     // Add quantity or grouping
     if (bulkForm.useGrouping && bulkForm.groupName) {
       updateData.groupName = bulkForm.groupName;
-      updateData.groupQuantity = bulkForm.groupQuantity;
+      updateData.groupQuantity = parseInt(bulkForm.groupQuantity) || 1;
     } else {
-      updateData.quantity = bulkForm.quantity;
+      updateData.quantity = parseInt(bulkForm.quantity) || 1;
     }
 
     // Add employee ID when assigning back to WITH_EMPLOYEE
@@ -124,8 +124,8 @@ export function BulkUpdateItemsModal({
       currentStatus: ItemStatus.WITH_EMPLOYEE,
       newStatus: ItemStatus.SOLD,
       useGrouping: false,
-      quantity: 1,
-      groupQuantity: 1,
+      quantity: '1',
+      groupQuantity: '1',
       groupName: '',
       sellPrice: '',
       notes: ''
@@ -214,10 +214,10 @@ export function BulkUpdateItemsModal({
                   <Label htmlFor="quantity">Number of Items</Label>
                   <Input
                     id="quantity"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputMode="numeric"
                     value={bulkForm.quantity}
-                    onChange={(e) => setBulkForm({...bulkForm, quantity: parseInt(e.target.value) || 1})}
+                    onChange={(e) => setBulkForm({...bulkForm, quantity: e.target.value})}
                   />
                 </div>
               )}
@@ -259,10 +259,10 @@ export function BulkUpdateItemsModal({
                         <Label htmlFor="groupQuantity">Number of Groups</Label>
                         <Input
                           id="groupQuantity"
-                          type="number"
-                          min="1"
+                          type="text"
+                          inputMode="numeric"
                           value={bulkForm.groupQuantity}
-                          onChange={(e) => setBulkForm({...bulkForm, groupQuantity: parseInt(e.target.value) || 1})}
+                          onChange={(e) => setBulkForm({...bulkForm, groupQuantity: e.target.value})}
                         />
                       </div>
                     </div>
@@ -278,9 +278,8 @@ export function BulkUpdateItemsModal({
               <Label htmlFor="sellPrice">Sell Price (₹)</Label>
               <Input
                 id="sellPrice"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="Enter sell price per item"
                 value={bulkForm.sellPrice}
                 onChange={(e) => setBulkForm({...bulkForm, sellPrice: e.target.value})}

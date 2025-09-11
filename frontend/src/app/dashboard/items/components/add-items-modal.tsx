@@ -23,7 +23,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     itemTypeId: '',
-    quantity: 1,
+    quantity: '1',
     groupQuantity: '',
     groupName: '',
     purchasePrice: '',
@@ -82,11 +82,12 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
   const calculateTotalItems = () => {
     if (formData.groupQuantity && formData.groupName && selectedItemType?.grouping) {
       const grouping = selectedItemType.grouping.find(g => g.groupName === formData.groupName);
-      if (grouping) {
-        return parseInt(formData.groupQuantity) * grouping.unitsPerGroup;
+      const groupQty = parseInt(formData.groupQuantity) || 0;
+      if (grouping && groupQty > 0) {
+        return groupQty * grouping.unitsPerGroup;
       }
     }
-    return formData.quantity;
+    return parseInt(formData.quantity) || 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -104,11 +105,11 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
 
     const submitData: CreateItemsRequest = {
       itemTypeId: formData.itemTypeId,
-      quantity: formData.groupQuantity ? undefined : formData.quantity,
-      groupQuantity: formData.groupQuantity ? parseInt(formData.groupQuantity) : undefined,
+      quantity: formData.groupQuantity ? undefined : parseInt(formData.quantity) || 1,
+      groupQuantity: formData.groupQuantity ? parseInt(formData.groupQuantity) || 1 : undefined,
       groupName: formData.groupName || undefined,
-      purchasePrice: parseFloat(formData.purchasePrice),
-      sellPrice: formData.sellPrice ? parseFloat(formData.sellPrice) : undefined,
+      purchasePrice: parseFloat(formData.purchasePrice) || 0,
+      sellPrice: formData.sellPrice ? parseFloat(formData.sellPrice) || 0 : undefined,
     };
 
     createItemsMutation.mutate(submitData);
@@ -117,7 +118,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
   const handleClose = () => {
     setFormData({
       itemTypeId: '',
-      quantity: 1,
+      quantity: '1',
       groupQuantity: '',
       groupName: '',
       purchasePrice: '',
@@ -177,8 +178,8 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               <Input
                 id="quantity"
                 name="quantity"
-                type="number"
-                min="1"
+                type="text"
+                inputMode="numeric"
                 placeholder="Number of individual items"
                 value={formData.quantity}
                 onChange={handleInputChange}
@@ -213,8 +214,8 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
                     <Input
                       id="groupQuantity"
                       name="groupQuantity"
-                      type="number"
-                      min="1"
+                      type="text"
+                      inputMode="numeric"
                       placeholder="Number of groups"
                       value={formData.groupQuantity}
                       onChange={handleInputChange}
@@ -240,9 +241,8 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               <Input
                 id="purchasePrice"
                 name="purchasePrice"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="₹0.00"
                 value={formData.purchasePrice}
                 onChange={handleInputChange}
@@ -256,9 +256,8 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               <Input
                 id="sellPrice"
                 name="sellPrice"
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 placeholder="₹0.00 (optional)"
                 value={formData.sellPrice}
                 onChange={handleInputChange}

@@ -15,6 +15,7 @@ import { ShoppingBag, Loader2, Settings } from "lucide-react";
 import { itemsAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { ItemStatus } from "@/types/api";
 
 export function EmployeeDashboard() {
   const router = useRouter();
@@ -27,7 +28,8 @@ export function EmployeeDashboard() {
     refetch: refetchStats,
   } = useQuery({
     queryKey: ["employee-my-items", user?._id],
-    queryFn: () => itemsAPI.getMyItems({ limit: 1000 }),
+    queryFn: () =>
+      itemsAPI.getMyItems({ limit: 1000, status: ItemStatus.WITH_EMPLOYEE }),
     enabled: !!user?._id,
     staleTime: 60000,
     gcTime: 5 * 60 * 1000,
@@ -88,7 +90,7 @@ export function EmployeeDashboard() {
               <>
                 <div className="text-2xl font-bold">{myItemsCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  Currently assigned to you
+                  Items currently in your care
                 </p>
               </>
             )}
@@ -111,7 +113,8 @@ export function EmployeeDashboard() {
                 My Items ({myItemsCount})
               </CardTitle>
               <CardDescription>
-                View and manage items assigned to you. Update item status, mark as sold, and track your inventory.
+                View and manage items currently in your care. Update item
+                status, mark as sold, and track your inventory.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -126,7 +129,8 @@ export function EmployeeDashboard() {
                 Settings
               </CardTitle>
               <CardDescription>
-                Manage your account settings and profile. Update personal information and preferences.
+                Manage your account settings and profile. Update personal
+                information and preferences.
               </CardDescription>
             </CardHeader>
           </Card>
