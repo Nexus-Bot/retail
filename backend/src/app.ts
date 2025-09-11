@@ -2,11 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database';
+import { cacheService } from './config/cache';
 import v1Routes from './routes/v1';
 
 dotenv.config();
 
+// Initialize database and cache
 connectDB();
+cacheService.connect().catch(err => {
+  console.error('Failed to connect to cache:', err);
+});
 
 const app = express();
 

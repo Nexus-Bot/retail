@@ -4,6 +4,7 @@ import crypto from "crypto";
 import User from "../models/User";
 import Agency from "../models/Agency";
 import { UserRole } from "../types/auth";
+import { cacheService } from "../config/cache";
 
 export const login = async (req: Request, res: Response) => {
   try {
@@ -314,6 +315,13 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    // Invalidate user cache on update
+    const userSessions = userToUpdate.activeSessions || [];
+    for (const session of userSessions) {
+      const cacheKey = `user:${id}:${session.tokenId}`;
+      await cacheService.del(cacheKey);
+    }
+
     return res.json({
       message: "User updated successfully",
       user: updatedUser,
@@ -353,6 +361,10 @@ export const logout = async (req: Request, res: Response) => {
     user.removeSession(currentUser.tokenId);
     await user.save();
 
+    // Invalidate cache for this session
+    const cacheKey = `user:${currentUser.id}:${currentUser.tokenId}`;
+    await cacheService.del(cacheKey);
+
     return res.json({
       success: true,
       message: "Logged out successfully",
@@ -385,14 +397,23 @@ export const logoutAll = async (req: Request, res: Response) => {
       });
     }
 
+    // Get sessions before removal for cache invalidation
+    const sessionsToRemove = [...user.activeSessions];
+    
     // Remove all sessions
     user.removeAllSessions();
     await user.save();
 
+    // Invalidate all cached sessions
+    for (const session of sessionsToRemove) {
+      const cacheKey = `user:${currentUser.id}:${session.tokenId}`;
+      await cacheService.del(cacheKey);
+    }
+
     return res.json({
       success: true,
       message: "Logged out from all sessions successfully",
-      sessionsRemoved: user.activeSessions.length,
+      sessionsRemoved: sessionsToRemove.length,
     });
   } catch (error) {
     return res.status(500).json({
