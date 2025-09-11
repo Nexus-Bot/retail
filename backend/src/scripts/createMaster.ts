@@ -33,7 +33,7 @@ const createMasterUser = async () => {
     console.log("✅ Master user created successfully");
     console.log("📋 Credentials:");
     console.log("   Username: master");
-    console.log("   Password: master123");
+    console.log("   Password: masterl037884");
     console.log("   Role: master");
 
     process.exit(0);

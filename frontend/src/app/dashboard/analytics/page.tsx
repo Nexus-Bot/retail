@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, DollarSign, Package, Users, Calendar } from 'lucide-react';
-import { UserRole } from '@/lib/types';
+import { UserRole } from '@/types/api';
 
 function AnalyticsContent() {
   const [timeRange, setTimeRange] = useState('30d');
