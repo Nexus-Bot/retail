@@ -52,10 +52,13 @@ const itemSchema = new mongoose.Schema(
 
 
 
-// Index for efficient queries
-itemSchema.index({ agency: 1, status: 1 });
-itemSchema.index({ currentHolder: 1 });
-itemSchema.index({ itemType: 1 });
-itemSchema.index({ createdAt: -1 });
+// Indexes for efficient queries
+itemSchema.index({ agency: 1, status: 1 });              // Primary filtering (most common)
+itemSchema.index({ currentHolder: 1 });                  // Employee items lookup
+itemSchema.index({ itemType: 1 });                       // Type-based queries
+itemSchema.index({ createdAt: -1 });                     // Recent items sorting
+itemSchema.index({ status: 1, itemType: 1 });           // Status + type queries  
+itemSchema.index({ agency: 1, itemType: 1, status: 1 }); // Complex filtering
+itemSchema.index({ createdBy: 1 });
 
 export default mongoose.model<IItem>("Item", itemSchema);

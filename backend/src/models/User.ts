@@ -168,4 +168,11 @@ userSchema.methods.removeAllSessions = function(): void {
   this.activeSessions = [];
 };
 
+// Indexes for query optimization
+userSchema.index({ username: 1 });                    // Login queries
+userSchema.index({ status: 1, agency: 1 });          // User listing with filters
+userSchema.index({ "activeSessions.tokenId": 1 });   // Auth token lookup
+userSchema.index({ role: 1, agency: 1 });            // Role-based queries
+userSchema.index({ createdAt: -1 });                  // Recent users sorting
+
 export default mongoose.model<IUser>('User', userSchema);

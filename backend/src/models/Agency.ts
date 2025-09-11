@@ -21,4 +21,9 @@ const agencySchema = new mongoose.Schema({
   timestamps: true,
 });
 
+// Indexes for efficient queries
+agencySchema.index({ status: 1 });          // Status-based filtering
+agencySchema.index({ createdAt: -1 });      // Recent agencies sorting
+agencySchema.index({ createdBy: 1 });       // Created by queries
+
 export default mongoose.model('Agency', agencySchema);
