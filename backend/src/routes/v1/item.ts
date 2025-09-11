@@ -7,7 +7,6 @@ import {
   getItem, 
   updateItem,
   bulkUpdateItems,
-  getItemHistory,
   getMyItems
 } from '../../controllers/itemController';
 
@@ -31,8 +30,6 @@ router.get('/my/items', authorize(Permission.READ_INVENTORY), getMyItems);
 // Get single item - requires read inventory permission
 router.get('/:id', authorize(Permission.READ_INVENTORY), getItem);
 
-// Get item status history - requires read inventory permission
-router.get('/:id/history', authorize(Permission.READ_INVENTORY), getItemHistory);
 
 // Update item (details, status, etc.) - requires update inventory permission
 router.put('/:id', authorize(Permission.UPDATE_INVENTORY), updateItem);

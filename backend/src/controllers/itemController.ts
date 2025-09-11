@@ -8,7 +8,6 @@ import { UserRole } from "../types/auth";
 interface UpdateItemOptions {
   status?: ItemStatus;
   currentHolder?: string;
-  notes?: string;
 }
 
 const updateSingleItem = async (
@@ -16,7 +15,7 @@ const updateSingleItem = async (
   updateOptions: UpdateItemOptions,
   currentUser: any
 ) => {
-  const { status, currentHolder, notes } = updateOptions;
+  const { status, currentHolder } = updateOptions;
 
   // Validate status if provided
   if (status !== undefined) {
@@ -64,7 +63,15 @@ const updateSingleItem = async (
 
   // Handle status change
   if (status !== undefined) {
-    item.addStatusChange(status, currentUser!.id, currentHolder, notes);
+    item.status = status;
+    
+    // Set currentHolder based on status
+    if (status === ItemStatus.WITH_EMPLOYEE) {
+      item.currentHolder = currentHolder;
+    } else if (status === ItemStatus.IN_INVENTORY) {
+      item.currentHolder = undefined;
+    }
+    // For SOLD status, preserve the existing currentHolder
   }
 
   await item.save();
@@ -202,8 +209,6 @@ export const getItems = async (req: Request, res: Response) => {
       .populate("agency", "name")
       .populate("createdBy", "username")
       .populate("currentHolder", "username")
-      .populate("statusHistory.changedBy", "username")
-      .populate("statusHistory.currentHolder", "username")
       .skip(skip)
       .limit(Number(limit))
       .sort({ createdAt: -1 });
@@ -285,9 +290,7 @@ export const getItem = async (req: Request, res: Response) => {
       .populate("itemType", "name grouping description")
       .populate("agency", "name")
       .populate("createdBy", "username")
-      .populate("currentHolder", "username")
-      .populate("statusHistory.changedBy", "username")
-      .populate("statusHistory.currentHolder", "username");
+      .populate("currentHolder", "username");
 
     if (!item) {
       return res.status(404).json({
@@ -326,7 +329,6 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       itemTypeId,
       status,
       currentHolder,
-      notes,
       quantity,
       groupQuantity,
       groupName,
@@ -402,7 +404,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       try {
         await updateSingleItem(
           item,
-          { status, currentHolder, notes },
+          { status, currentHolder },
           currentUser
         );
         updatedItems.push(item);
@@ -443,7 +445,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, currentHolder, notes } = req.body;
+    const { status, currentHolder } = req.body;
     const currentUser = req.user;
 
     const item = await Item.findById(id).populate("itemType");
@@ -479,7 +481,7 @@ export const updateItem = async (req: Request, res: Response) => {
     // Use the utility function to update the item
     await updateSingleItem(
       item,
-      { status, currentHolder, notes },
+      { status, currentHolder },
       currentUser
     );
 
@@ -487,8 +489,6 @@ export const updateItem = async (req: Request, res: Response) => {
     await item.populate("agency", "name");
     await item.populate("createdBy", "username");
     await item.populate("currentHolder", "username");
-    await item.populate("statusHistory.changedBy", "username");
-    await item.populate("statusHistory.currentHolder", "username");
 
     return res.json({
       success: true,
@@ -613,45 +613,3 @@ export const getMyItems = async (req: Request, res: Response) => {
   }
 };
 
-export const getItemHistory = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const currentUser = req.user;
-
-    const item = await Item.findById(id)
-      .populate("statusHistory.changedBy", "username")
-      .populate("statusHistory.currentHolder", "username")
-      .select("statusHistory agency");
-
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Item not found",
-      });
-    }
-
-    // Role-based access control
-    if (
-      currentUser?.role !== UserRole.MASTER &&
-      item.agency.toString() !== currentUser?.agencyId
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-
-    return res.json({
-      success: true,
-      data: item.statusHistory.sort(
-        (a, b) => b.date.getTime() - a.date.getTime()
-      ),
-    });
-  } catch (error) {
-    console.error("Get item history error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
