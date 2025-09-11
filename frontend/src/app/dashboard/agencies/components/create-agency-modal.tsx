@@ -65,7 +65,7 @@ export function CreateAgencyModal({ isOpen, onClose }: CreateAgencyModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>Create New Agency</DialogTitle>
           <DialogDescription>

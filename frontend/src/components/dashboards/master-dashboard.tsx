@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import { Building2, Users, Plus, Activity, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { systemAPI } from '@/lib/api';
-import { HealthResponse } from '@/types/api';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Activity, Loader2, Building2, Users } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { systemAPI } from "@/lib/api";
+import { HealthResponse } from "@/types/api";
 
 export function MasterDashboard() {
   const router = useRouter();
@@ -17,9 +23,9 @@ export function MasterDashboard() {
     data: health,
     isLoading: loading,
     error,
-    refetch: refetchHealth
+    refetch: refetchHealth,
   } = useQuery<HealthResponse>({
-    queryKey: ['health-status'],
+    queryKey: ["health-status"],
     queryFn: async () => {
       const response = await systemAPI.getHealth();
       return response.data;
@@ -49,10 +55,10 @@ export function MasterDashboard() {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-red-600">
-              <p>{error?.message || 'An error occurred'}</p>
-              <Button 
-                variant="outline" 
-                onClick={() => refetchHealth()} 
+              <p>{error?.message || "An error occurred"}</p>
+              <Button
+                variant="outline"
+                onClick={() => refetchHealth()}
                 className="mt-2"
               >
                 Retry
@@ -77,11 +83,17 @@ export function MasterDashboard() {
               </div>
             ) : (
               <>
-                <div className={`text-2xl font-bold ${health?.status === 'healthy' ? 'text-green-600' : 'text-red-600'}`}>
-                  {health?.status?.toUpperCase() || 'UNKNOWN'}
+                <div
+                  className={`text-2xl font-bold ${
+                    health?.status === "healthy"
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {health?.status?.toUpperCase() || "UNKNOWN"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Version: {health?.version || 'N/A'}
+                  Version: {health?.version || "N/A"}
                 </p>
               </>
             )}
@@ -104,67 +116,49 @@ export function MasterDashboard() {
                 <div className="text-2xl font-bold text-blue-600">
                   {health?.uptime ? Math.floor(health.uptime / 3600) : 0}h
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Hours running
-                </p>
+                <p className="text-xs text-muted-foreground">Hours running</p>
               </>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Management Overview */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
-        
+        <h2 className="text-lg font-semibold text-gray-900">System Management</h2>
+
         <div className="grid gap-4">
-          <Card 
+          <Card
             className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/dashboard/agencies/create')}
-          >
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Plus className="mr-2 h-5 w-5" />
-                Create New Agency
-              </CardTitle>
-              <CardDescription>
-                Set up a new retail agency with owner account
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/dashboard/users/create')}
-          >
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Users className="mr-2 h-5 w-5" />
-                Create New User
-              </CardTitle>
-              <CardDescription>
-                Add users to existing agencies
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card 
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push('/dashboard/agencies')}
+            onClick={() => router.push("/dashboard/agencies")}
           >
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Building2 className="mr-2 h-5 w-5" />
-                Manage Agencies
+                All Agencies
               </CardTitle>
               <CardDescription>
-                View and manage all registered agencies
+                View and manage all registered agencies. Create new agencies, edit existing ones, and oversee the entire network.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/users")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                All Users
+              </CardTitle>
+              <CardDescription>
+                Manage all system users across agencies. Create new users, assign roles, and maintain user accounts.
               </CardDescription>
             </CardHeader>
           </Card>
         </div>
       </div>
-
     </div>
   );
 }

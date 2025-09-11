@@ -69,7 +69,7 @@ export function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-md mx-auto">
         <DialogHeader>
           <DialogTitle>Add New Employee</DialogTitle>
           <DialogDescription>

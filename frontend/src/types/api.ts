@@ -156,6 +156,9 @@ export interface UpdateUserRequest {
   username?: string;
   role?: UserRole;
   agencyId?: string;
+  permissions?: Permission[];
+  status?: "active" | "inactive" | "suspended";
+  password?: string;
 }
 
 export interface GetUsersQuery {

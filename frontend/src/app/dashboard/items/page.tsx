@@ -85,17 +85,17 @@ function ItemsManagementContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Items Management</h1>
           <p className="text-gray-600">Manage your inventory with bulk operations</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsAddModalOpen(true)}>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setIsAddModalOpen(true)} className="w-fit">
             <Plus className="h-4 w-4 mr-2" />
             Add Items
           </Button>
-          <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)}>
+          <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)} className="w-fit">
             <Edit className="h-4 w-4 mr-2" />
             Bulk Actions
           </Button>
@@ -171,16 +171,14 @@ function ItemsManagementContent() {
       </div>
 
       {/* Search */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search item types..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          placeholder="Search item types..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       {/* Item Types Table */}
@@ -199,13 +197,13 @@ function ItemsManagementContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Actions</TableHead>
                     <TableHead>Item Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Total Items</TableHead>
                     <TableHead>Available</TableHead>
                     <TableHead>With Employees</TableHead>
                     <TableHead>Sold</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -217,6 +215,20 @@ function ItemsManagementContent() {
                     
                     return (
                       <TableRow key={itemType._id}>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                setSelectedItemType(itemType._id);
+                                setIsBulkDialogOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell className="font-medium">{itemType.name}</TableCell>
                         <TableCell className="text-sm text-gray-600">
                           {itemType.description || '-'}
@@ -238,20 +250,6 @@ function ItemsManagementContent() {
                           <Badge className="bg-green-100 text-green-700">
                             {soldCount}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => {
-                                setSelectedItemType(itemType._id);
-                                setIsBulkDialogOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </TableCell>
                       </TableRow>
                     );

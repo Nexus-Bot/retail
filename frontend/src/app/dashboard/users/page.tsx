@@ -43,7 +43,7 @@ function AllUsersContent() {
     retry: 2,
   });
 
-  const users = usersResponse?.users || [];
+  const users = usersResponse?.data || [];
   const pagination = usersResponse?.pagination;
 
   const filteredUsers = users.filter((user: ApiUser) =>
@@ -66,7 +66,7 @@ function AllUsersContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Users</h1>
           <p className="text-gray-600">
@@ -78,7 +78,7 @@ function AllUsersContent() {
             )}
           </p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="w-fit">
           <Plus className="h-4 w-4 mr-2" />
           Create User
         </Button>
@@ -131,16 +131,14 @@ function AllUsersContent() {
       </div>
 
       {/* Search */}
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          placeholder="Search users..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10"
+        />
       </div>
 
       {/* Error State */}
@@ -180,17 +178,29 @@ function AllUsersContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Actions</TableHead>
                     <TableHead>Username</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Agency</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user: ApiUser) => (
                     <TableRow key={user._id}>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {user.username}
                       </TableCell>
@@ -216,23 +226,11 @@ function AllUsersContent() {
                       <TableCell>
                         {new Date(user.createdAt).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setIsEditModalOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-
+              
               {filteredUsers.length === 0 && !loading && (
                 <div className="text-center py-10">
                   <User className="mx-auto h-12 w-12 text-gray-400" />

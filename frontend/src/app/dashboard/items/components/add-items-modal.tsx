@@ -128,7 +128,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Package className="mr-2 h-5 w-5" />
@@ -191,7 +191,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               <>
                 <div className="text-center text-sm text-gray-500">OR</div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="groupName">Group Type</Label>
                     <Select value={formData.groupName} onValueChange={handleGroupNameChange} disabled={createItemsMutation.isPending}>
@@ -267,13 +267,19 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
             </div>
           </div>
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
             <Button 
               type="submit" 
               disabled={createItemsMutation.isPending || !formData.itemTypeId || !formData.purchasePrice}
+              className="w-full sm:w-auto"
             >
               {createItemsMutation.isPending ? (
                 <>

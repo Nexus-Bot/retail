@@ -1,5 +1,5 @@
 import express from 'express';
-import { login, getProfile, createUser, getUsers, logout, logoutAll } from '../../controllers/authController';
+import { login, getProfile, createUser, getUsers, updateUser, logout, logoutAll } from '../../controllers/authController';
 import { authenticate, authorize, requireRole } from '../../middleware/auth';
 import { Permission, UserRole } from '../../types/auth';
 
@@ -26,6 +26,11 @@ router.post('/users',
 router.get('/users', 
   authorize(Permission.READ_USERS),
   getUsers
+);
+
+router.put('/users/:id', 
+  authorize(Permission.UPDATE_USERS),
+  updateUser
 );
 
 // Test route for checking permissions

@@ -84,12 +84,12 @@ function MyItemsContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Items</h1>
           <p className="text-gray-600">Manage items assigned to you with bulk operations</p>
         </div>
-        <Button onClick={() => setIsBulkDialogOpen(true)}>
+        <Button onClick={() => setIsBulkDialogOpen(true)} className="w-fit">
           <Edit className="h-4 w-4 mr-2" />
           Update Items Status
         </Button>

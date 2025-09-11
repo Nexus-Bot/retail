@@ -221,6 +221,115 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
+export const updateUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { username, role, agencyId, permissions, status, password } = req.body;
+    const currentUser = req.user;
+
+    // Find the user to update
+    const userToUpdate = await User.findById(id);
+    if (!userToUpdate) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Permission checks
+    if (currentUser?.role === UserRole.OWNER) {
+      // Owners can only update employees within their agency
+      if (userToUpdate.agency?.toString() !== currentUser.agencyId) {
+        return res.status(403).json({
+          message: "You can only update users within your agency",
+        });
+      }
+      if (userToUpdate.role !== UserRole.EMPLOYEE) {
+        return res.status(403).json({
+          message: "Owners can only update employees",
+        });
+      }
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+
+    if (username) {
+      updateData.username = username;
+    }
+
+    if (role !== undefined) {
+      // Role change restrictions
+      if (currentUser?.role === UserRole.OWNER && role !== UserRole.EMPLOYEE) {
+        return res.status(403).json({
+          message: "Owners can only assign employee role",
+        });
+      }
+      updateData.role = role;
+    }
+
+    if (agencyId !== undefined) {
+      // Agency assignment restrictions
+      if (currentUser?.role === UserRole.OWNER) {
+        // Owners cannot change agency assignment
+        if (agencyId !== currentUser.agencyId) {
+          return res.status(403).json({
+            message: "You cannot assign users to other agencies",
+          });
+        }
+      } else if (currentUser?.role === UserRole.MASTER) {
+        // Masters can assign to any agency
+        if (agencyId) {
+          const agency = await Agency.findById(agencyId);
+          if (!agency) {
+            return res.status(404).json({ message: "Agency not found" });
+          }
+        }
+      }
+      updateData.agency = agencyId;
+    }
+
+    if (permissions !== undefined) {
+      updateData.permissions = permissions;
+    }
+
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+
+    if (password) {
+      // Password will be hashed by the pre-save middleware
+      updateData.password = password;
+    }
+
+    updateData.updatedAt = new Date();
+
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    )
+      .populate("agency", "name")
+      .select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error: any) {
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ message: `${field} already exists` });
+    }
+    return res.status(500).json({
+      message: "Server error",
+      error: error instanceof Error ? error.message : error,
+    });
+  }
+};
+
 export const logout = async (req: Request, res: Response) => {
   try {
     const currentUser = req.user;

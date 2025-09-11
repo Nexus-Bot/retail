@@ -93,7 +93,7 @@ export function CreateItemTypeModal({ isOpen, onClose }: CreateItemTypeModalProp
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Item Type</DialogTitle>
           <DialogDescription>
@@ -152,7 +152,7 @@ export function CreateItemTypeModal({ isOpen, onClose }: CreateItemTypeModalProp
             </div>
 
             {groupings.map((grouping, index) => (
-              <div key={index} className="flex items-end space-x-4 p-4 border rounded-lg">
+              <div key={index} className="flex flex-col sm:flex-row sm:items-end space-y-4 sm:space-y-0 sm:space-x-4 p-4 border rounded-lg">
                 <div className="flex-1 space-y-2">
                   <Label htmlFor={`groupName-${index}`}>Group Name</Label>
                   <Input

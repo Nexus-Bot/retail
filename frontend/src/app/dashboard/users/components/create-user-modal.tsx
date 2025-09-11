@@ -115,10 +115,10 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New User</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Create New User</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base">
             Add a new user to the system
           </DialogDescription>
         </DialogHeader>
@@ -187,13 +187,19 @@ export function CreateUserModal({ isOpen, onClose }: CreateUserModalProps) {
             </div>
           )}
           
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
             <Button 
               type="submit" 
               disabled={createUserMutation.isPending}
+              className="w-full sm:w-auto"
             >
               {createUserMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Create User

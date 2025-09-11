@@ -135,7 +135,7 @@ export function BulkUpdateItemsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-full max-w-[90vw] sm:max-w-lg mx-auto">
         <DialogHeader>
           <DialogTitle>Update Items Status</DialogTitle>
           <DialogDescription>
@@ -159,7 +159,7 @@ export function BulkUpdateItemsModal({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Current Status</Label>
               <Select 

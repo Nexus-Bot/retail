@@ -9,18 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Users, Search, UserPlus, Loader2 } from 'lucide-react';
+import { Users, Search, UserPlus, Loader2, Edit } from 'lucide-react';
 import { UserRole, User } from '@/types/api';
 import { usersAPI } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useQuery } from '@tanstack/react-query';
 import { CreateEmployeeModal } from './components/create-employee-modal';
+import { EditEmployeeModal } from './components/edit-employee-modal';
 
 
 function EmployeesContent() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
 
   const {
     data: employeesResponse,
@@ -57,12 +60,12 @@ function EmployeesContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
           <p className="text-gray-600">Manage your team and track performance</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="w-fit">
           <UserPlus className="h-4 w-4 mr-2" />
           Add Employee
         </Button>
@@ -143,18 +146,30 @@ function EmployeesContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Actions</TableHead>
                     <TableHead>Employee</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Agency</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead>Last Login</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredEmployees.map((employee) => (
                     <TableRow key={employee._id}>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedEmployee(employee);
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-8 w-8">
@@ -184,11 +199,6 @@ function EmployeesContent() {
                           ? new Date(employee.lastLogin).toLocaleDateString() 
                           : 'Never'}
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          View Details
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -214,6 +224,16 @@ function EmployeesContent() {
       <CreateEmployeeModal 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+      />
+      
+      {/* Edit Employee Modal */}
+      <EditEmployeeModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedEmployee(null);
+        }}
+        employee={selectedEmployee}
       />
     </div>
   );

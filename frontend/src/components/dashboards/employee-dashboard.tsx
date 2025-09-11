@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-import { Package, ShoppingBag, Eye, Loader2, Settings } from "lucide-react";
+import { ShoppingBag, Loader2, Settings } from "lucide-react";
 import { itemsAPI } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 export function EmployeeDashboard() {
@@ -96,9 +96,9 @@ export function EmployeeDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Employee Tools */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Employee Tools</h2>
 
         <div className="grid gap-4">
           <Card
@@ -111,7 +111,7 @@ export function EmployeeDashboard() {
                 My Items ({myItemsCount})
               </CardTitle>
               <CardDescription>
-                View and manage items assigned to you
+                View and manage items assigned to you. Update item status, mark as sold, and track your inventory.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -123,9 +123,11 @@ export function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Settings className="mr-2 h-5 w-5" />
-                Update Profile
+                Settings
               </CardTitle>
-              <CardDescription>Manage your account settings</CardDescription>
+              <CardDescription>
+                Manage your account settings and profile. Update personal information and preferences.
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>

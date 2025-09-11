@@ -52,12 +52,12 @@ function ItemTypesContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Item Types</h1>
           <p className="text-gray-600">Manage your product definitions</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="w-fit">
           <Plus className="h-4 w-4 mr-2" />
           Create Item Type
         </Button>
@@ -141,17 +141,26 @@ function ItemTypesContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Actions</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Grouping</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {itemTypes.map((itemType) => (
                     <TableRow key={itemType._id}>
+                      <TableCell>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleEdit(itemType)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                       <TableCell className="font-medium">{itemType.name}</TableCell>
                       <TableCell>{itemType.description || '-'}</TableCell>
                       <TableCell>{formatGrouping(itemType.grouping)}</TableCell>
@@ -162,15 +171,6 @@ function ItemTypesContent() {
                       </TableCell>
                       <TableCell>
                         {new Date(itemType.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleEdit(itemType)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

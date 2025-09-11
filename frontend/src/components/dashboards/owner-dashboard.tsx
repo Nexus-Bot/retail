@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { itemsAPI, usersAPI } from "@/lib/api";
 import { ItemStatus, User, UserRole } from "@/types/api";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Package, Plus, TrendingUp, Users } from "lucide-react";
+import { Loader2, Package, TrendingUp, Users, BarChart3, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface OwnerStats {
@@ -150,9 +150,9 @@ export function OwnerDashboard() {
         </Card>
       </div>
 
-      {/* Quick Actions */}
+      {/* Business Operations */}
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+        <h2 className="text-lg font-semibold text-gray-900">Business Operations</h2>
 
         <div className="grid gap-4">
           <Card
@@ -162,23 +162,10 @@ export function OwnerDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Package className="mr-2 h-5 w-5" />
-                Manage Inventory
-              </CardTitle>
-              <CardDescription>View and update your items</CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card
-            className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push("/dashboard/employees")}
-          >
-            <CardHeader>
-              <CardTitle className="text-base flex items-center">
-                <Users className="mr-2 h-5 w-5" />
-                Manage Employees ({stats?.employees || 0})
+                Items Management
               </CardTitle>
               <CardDescription>
-                View employee performance and assign items
+                Manage your inventory with bulk operations. Add new items, assign to employees, and track status changes.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -190,10 +177,25 @@ export function OwnerDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Package className="mr-2 h-5 w-5" />
-                Manage Item Types
+                Item Types
               </CardTitle>
               <CardDescription>
-                Create and manage product definitions
+                Create and manage product definitions. Define item categories, groupings, and specifications.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/employees")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Users className="mr-2 h-5 w-5" />
+                Employees ({stats?.employees || 0})
+              </CardTitle>
+              <CardDescription>
+                Manage your team members. Add new employees, view performance, and assign items to employees.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -204,11 +206,26 @@ export function OwnerDashboard() {
           >
             <CardHeader>
               <CardTitle className="text-base flex items-center">
-                <TrendingUp className="mr-2 h-5 w-5" />
-                View Analytics
+                <BarChart3 className="mr-2 h-5 w-5" />
+                Analytics
               </CardTitle>
               <CardDescription>
-                Sales reports and inventory insights
+                View sales reports and inventory insights. Track performance metrics and business trends.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/settings")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Settings className="mr-2 h-5 w-5" />
+                Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your account settings and agency preferences. Update profile and business information.
               </CardDescription>
             </CardHeader>
           </Card>

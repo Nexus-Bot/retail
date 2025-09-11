@@ -54,8 +54,6 @@ const getNavigationForRole = (role: string): NavItem[] => {
   if (role === "master") {
     return [
       ...baseNavigation,
-      { name: "Create Agency", href: "/dashboard/agencies/create", icon: Plus },
-      { name: "Create User", href: "/dashboard/users/create", icon: User },
       { name: "All Agencies", href: "/dashboard/agencies", icon: Package },
       { name: "All Users", href: "/dashboard/users", icon: Users },
     ];
@@ -64,10 +62,10 @@ const getNavigationForRole = (role: string): NavItem[] => {
   if (role === "owner") {
     return [
       ...baseNavigation,
-      { name: "All Items", href: "/dashboard/items", icon: Package },
-      { name: "Add Items", href: "/dashboard/items/add", icon: Plus },
-      { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+      { name: "Items", href: "/dashboard/items", icon: Package },
+      { name: "Item Types", href: "/dashboard/item-types", icon: Package },
       { name: "Employees", href: "/dashboard/employees", icon: Users },
+      { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];
   }

@@ -50,12 +50,12 @@ function AllAgenciesContent() {
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Agencies</h1>
           <p className="text-gray-600">Manage all registered agencies</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="w-fit">
           <Plus className="h-4 w-4 mr-2" />
           Create Agency
         </Button>
@@ -129,24 +129,15 @@ function AllAgenciesContent() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Actions</TableHead>
                     <TableHead>Agency Name</TableHead>
                     <TableHead>Created Date</TableHead>
                     <TableHead>Last Updated</TableHead>
-                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAgencies.map((agency: Agency) => (
                     <TableRow key={agency._id}>
-                      <TableCell className="font-medium">
-                        {agency.name}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(agency.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(agency.updatedAt).toLocaleDateString()}
-                      </TableCell>
                       <TableCell>
                         <Button 
                           variant="ghost" 
@@ -158,6 +149,15 @@ function AllAgenciesContent() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {agency.name}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(agency.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(agency.updatedAt).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
                   ))}
