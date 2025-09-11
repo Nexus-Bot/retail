@@ -28,7 +28,6 @@ interface BulkForm {
   quantity: string;
   groupQuantity: string;
   groupName: string;
-  sellPrice: string;
   notes: string;
 }
 
@@ -49,7 +48,6 @@ export function BulkUpdateItemsModal({
     quantity: '1',
     groupQuantity: '1',
     groupName: '',
-    sellPrice: '',
     notes: ''
   });
 
@@ -70,8 +68,7 @@ export function BulkUpdateItemsModal({
         quantity: '1',
         groupQuantity: '1',
         groupName: '',
-        sellPrice: '',
-        notes: ''
+            notes: ''
       });
       const itemsUpdated = response.data.data?.itemsUpdated || 0;
       toast.success(`${itemsUpdated} items updated successfully`);
@@ -107,10 +104,6 @@ export function BulkUpdateItemsModal({
       updateData.currentHolder = user?._id;
     }
 
-    // Add sell price when marking as sold
-    if (bulkForm.newStatus === ItemStatus.SOLD && bulkForm.sellPrice) {
-      updateData.sellPrice = parseFloat(bulkForm.sellPrice);
-    }
 
     if (bulkForm.notes) {
       updateData.notes = bulkForm.notes;
@@ -127,8 +120,7 @@ export function BulkUpdateItemsModal({
       quantity: '1',
       groupQuantity: '1',
       groupName: '',
-      sellPrice: '',
-      notes: ''
+        notes: ''
     });
     onClose();
   };
@@ -272,20 +264,6 @@ export function BulkUpdateItemsModal({
             </div>
           </div>
 
-          {/* Sell Price (when marking as sold) */}
-          {bulkForm.newStatus === ItemStatus.SOLD && (
-            <div className="space-y-2">
-              <Label htmlFor="sellPrice">Sell Price (₹)</Label>
-              <Input
-                id="sellPrice"
-                type="text"
-                inputMode="decimal"
-                placeholder="Enter sell price per item"
-                value={bulkForm.sellPrice}
-                onChange={(e) => setBulkForm({...bulkForm, sellPrice: e.target.value})}
-              />
-            </div>
-          )}
 
           {/* Notes */}
           <div className="space-y-2">

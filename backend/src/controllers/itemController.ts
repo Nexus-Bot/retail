@@ -6,8 +6,6 @@ import User from "../models/User";
 import { UserRole } from "../types/auth";
 
 interface UpdateItemOptions {
-  purchasePrice?: number;
-  sellPrice?: number;
   status?: ItemStatus;
   currentHolder?: string;
   notes?: string;
@@ -18,8 +16,7 @@ const updateSingleItem = async (
   updateOptions: UpdateItemOptions,
   currentUser: any
 ) => {
-  const { purchasePrice, sellPrice, status, currentHolder, notes } =
-    updateOptions;
+  const { status, currentHolder, notes } = updateOptions;
 
   // Validate status if provided
   if (status !== undefined) {
@@ -62,29 +59,8 @@ const updateSingleItem = async (
       }
     }
 
-    // When marking item as sold, sellPrice is required
-    if (status === ItemStatus.SOLD && sellPrice === undefined) {
-      throw new Error("Sell price is required when marking item as sold");
-    }
   }
 
-  // Update fields based on role permissions
-  if (currentUser?.role === UserRole.OWNER) {
-    if (purchasePrice !== undefined) {
-      if (purchasePrice < 0) {
-        throw new Error("Purchase price cannot be negative");
-      }
-      item.purchasePrice = purchasePrice;
-    }
-  }
-
-  // Both owners and employees can update sellPrice
-  if (sellPrice !== undefined) {
-    if (sellPrice < 0) {
-      throw new Error("Sell price cannot be negative");
-    }
-    item.sellPrice = sellPrice;
-  }
 
   // Handle status change
   if (status !== undefined) {
@@ -102,32 +78,16 @@ export const createItems = async (req: Request, res: Response) => {
       quantity,
       groupQuantity,
       groupName,
-      purchasePrice,
-      sellPrice,
     } = req.body;
     const currentUser = req.user;
 
-    if (!itemTypeId || !purchasePrice) {
+    if (!itemTypeId) {
       return res.status(400).json({
         success: false,
-        message: "Item type and purchase price are required",
+        message: "Item type is required",
       });
     }
 
-    if (purchasePrice < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Purchase price cannot be negative",
-      });
-    }
-
-    // Validate sellPrice if provided
-    if (sellPrice !== undefined && sellPrice < 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Sell price cannot be negative",
-      });
-    }
 
     // Only owners can create items
     if (currentUser?.role !== UserRole.OWNER) {
@@ -171,13 +131,9 @@ export const createItems = async (req: Request, res: Response) => {
     for (let i = 0; i < itemsToCreate; i++) {
       const itemData: any = {
         itemType: itemTypeId,
-        purchasePrice,
         agency: currentUser.agencyId,
         createdBy: currentUser.id,
       };
-
-      // Add optional fields
-      if (sellPrice !== undefined) itemData.sellPrice = sellPrice;
 
       const item = new Item(itemData);
       items.push(item);
@@ -371,7 +327,6 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       status,
       currentHolder,
       notes,
-      sellPrice,
       quantity,
       groupQuantity,
       groupName,
@@ -447,7 +402,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       try {
         await updateSingleItem(
           item,
-          { sellPrice, status, currentHolder, notes },
+          { status, currentHolder, notes },
           currentUser
         );
         updatedItems.push(item);
@@ -488,7 +443,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
 export const updateItem = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { purchasePrice, sellPrice, status, currentHolder, notes } = req.body;
+    const { status, currentHolder, notes } = req.body;
     const currentUser = req.user;
 
     const item = await Item.findById(id).populate("itemType");
@@ -519,19 +474,12 @@ export const updateItem = async (req: Request, res: Response) => {
         });
       }
 
-      // Employees can only update sellPrice and status
-      if (purchasePrice !== undefined) {
-        return res.status(403).json({
-          success: false,
-          message: "Employees can only update sell price and status",
-        });
-      }
     }
 
     // Use the utility function to update the item
     await updateSingleItem(
       item,
-      { purchasePrice, sellPrice, status, currentHolder, notes },
+      { status, currentHolder, notes },
       currentUser
     );
 

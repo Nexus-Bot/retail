@@ -250,8 +250,6 @@ export interface Item {
   _id: string;
   itemType: ItemType | string;
   agency: Agency | string;
-  purchasePrice: number;
-  sellPrice?: number;
   status: ItemStatus;
   currentHolder?: User | string;
   statusHistory: StatusHistory[];
@@ -266,13 +264,9 @@ export interface CreateItemsRequest {
   quantity?: number;
   groupQuantity?: number;
   groupName?: string;
-  purchasePrice: number;
-  sellPrice?: number;
 }
 
 export interface UpdateItemRequest {
-  purchasePrice?: number;
-  sellPrice?: number;
   status?: ItemStatus;
   currentHolder?: string;
   notes?: string;
@@ -283,7 +277,6 @@ export interface BulkUpdateItemsRequest {
   status?: ItemStatus;
   currentHolder?: string;
   notes?: string;
-  sellPrice?: number;
   quantity?: number;
   groupQuantity?: number;
   groupName?: string;

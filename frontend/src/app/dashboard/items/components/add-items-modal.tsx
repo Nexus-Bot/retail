@@ -26,8 +26,6 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
     quantity: '1',
     groupQuantity: '',
     groupName: '',
-    purchasePrice: '',
-    sellPrice: '',
   });
 
   // Fetch item types from the backend
@@ -98,18 +96,12 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
       return;
     }
 
-    if (!formData.purchasePrice.trim()) {
-      toast.error('Purchase price is required');
-      return;
-    }
 
     const submitData: CreateItemsRequest = {
       itemTypeId: formData.itemTypeId,
       quantity: formData.groupQuantity ? undefined : parseInt(formData.quantity) || 1,
       groupQuantity: formData.groupQuantity ? parseInt(formData.groupQuantity) || 1 : undefined,
       groupName: formData.groupName || undefined,
-      purchasePrice: parseFloat(formData.purchasePrice) || 0,
-      sellPrice: formData.sellPrice ? parseFloat(formData.sellPrice) || 0 : undefined,
     };
 
     createItemsMutation.mutate(submitData);
@@ -121,8 +113,6 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
       quantity: '1',
       groupQuantity: '',
       groupName: '',
-      purchasePrice: '',
-      sellPrice: '',
     });
     onClose();
   };
@@ -234,37 +224,6 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
             </div>
           </div>
 
-          {/* Pricing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="purchasePrice">Purchase Price (per item) *</Label>
-              <Input
-                id="purchasePrice"
-                name="purchasePrice"
-                type="text"
-                inputMode="decimal"
-                placeholder="₹0.00"
-                value={formData.purchasePrice}
-                onChange={handleInputChange}
-                required
-                disabled={createItemsMutation.isPending}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="sellPrice">Sell Price (per item)</Label>
-              <Input
-                id="sellPrice"
-                name="sellPrice"
-                type="text"
-                inputMode="decimal"
-                placeholder="₹0.00 (optional)"
-                value={formData.sellPrice}
-                onChange={handleInputChange}
-                disabled={createItemsMutation.isPending}
-              />
-            </div>
-          </div>
           
           <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0">
             <Button 
@@ -277,7 +236,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
             </Button>
             <Button 
               type="submit" 
-              disabled={createItemsMutation.isPending || !formData.itemTypeId || !formData.purchasePrice}
+              disabled={createItemsMutation.isPending || !formData.itemTypeId}
               className="w-full sm:w-auto"
             >
               {createItemsMutation.isPending ? (

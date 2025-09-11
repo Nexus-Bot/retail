@@ -16,8 +16,6 @@ interface IStatusHistory {
 
 interface IItem extends mongoose.Document {
   itemType: mongoose.Types.ObjectId; // Reference to ItemType
-  purchasePrice: number;
-  sellPrice?: number; // Optional - will be set when employee is ready to sell
   status: ItemStatus;
   agency: mongoose.Types.ObjectId;
   currentHolder?: mongoose.Types.ObjectId; // Current holder if status is 'with_employee'
@@ -67,16 +65,6 @@ const itemSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "ItemType",
       required: true,
-    },
-    purchasePrice: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
-    sellPrice: {
-      type: Number,
-      required: false,
-      min: 0,
     },
     status: {
       type: String,

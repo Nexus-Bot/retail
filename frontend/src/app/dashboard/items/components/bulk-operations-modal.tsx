@@ -56,7 +56,6 @@ export function BulkOperationsModal({
     groupQuantity: '1',
     groupName: "",
     currentHolder: "",
-    sellPrice: "",
     notes: "",
   });
 
@@ -125,9 +124,6 @@ export function BulkOperationsModal({
       updateData.currentHolder = bulkForm.currentHolder;
     }
 
-    if (bulkForm.newStatus === ItemStatus.SOLD && bulkForm.sellPrice) {
-      updateData.sellPrice = parseFloat(bulkForm.sellPrice);
-    }
 
     if (bulkForm.notes) {
       updateData.notes = bulkForm.notes;
@@ -145,8 +141,7 @@ export function BulkOperationsModal({
       groupQuantity: '1',
       groupName: "",
       currentHolder: "",
-      sellPrice: "",
-      notes: "",
+        notes: "",
     });
     onClose();
   };
@@ -341,20 +336,6 @@ export function BulkOperationsModal({
             </div>
           )}
 
-          {bulkForm.newStatus === ItemStatus.SOLD && (
-            <div className="space-y-2">
-              <Label htmlFor="sellPrice">Sell Price per Unit</Label>
-              <Input
-                type="text"
-                inputMode="decimal"
-                value={bulkForm.sellPrice}
-                onChange={(e) =>
-                  setBulkForm({ ...bulkForm, sellPrice: e.target.value })
-                }
-                placeholder="Enter price per unit"
-              />
-            </div>
-          )}
 
           {/* Notes */}
           <div className="space-y-2">
