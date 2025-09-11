@@ -23,12 +23,10 @@ import {
 import {
   Package,
   Home,
-  Plus,
   Users,
   Settings,
   LogOut,
   Menu,
-  User,
   ShoppingBag,
   BarChart3,
 } from "lucide-react";

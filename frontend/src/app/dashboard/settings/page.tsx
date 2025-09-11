@@ -38,7 +38,7 @@ function SettingsContent() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       handleInfo('Profile update functionality will be implemented soon');
-    } catch (error) {
+    } catch {
       handleError(new Error('Failed to update profile. Please try again.'));
     } finally {
       setIsLoading(false);
@@ -66,7 +66,7 @@ function SettingsContent() {
         newPassword: '',
         confirmPassword: '',
       });
-    } catch (error) {
+    } catch {
       handleError(new Error('Failed to change password. Please try again.'));
     } finally {
       setIsLoading(false);
