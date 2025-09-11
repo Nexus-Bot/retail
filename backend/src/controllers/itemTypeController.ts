@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import ItemType from "../models/ItemType";
 import { UserRole } from "../types/auth";
 
@@ -86,7 +87,7 @@ export const getItemTypes = async (req: Request, res: Response) => {
       currentUser?.role === UserRole.OWNER ||
       currentUser?.role === UserRole.EMPLOYEE
     ) {
-      filter.agency = currentUser.agencyId;
+      filter.agency = new mongoose.Types.ObjectId(currentUser.agencyId);
     }
 
     if (search) {
@@ -95,14 +96,47 @@ export const getItemTypes = async (req: Request, res: Response) => {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const itemTypes = await ItemType.find(filter)
-      .populate("agency", "name")
-      .populate("createdBy", "username")
-      .skip(skip)
-      .limit(Number(limit))
-      .sort({ createdAt: -1 });
+    // Single aggregation for both data and count
+    const results = await ItemType.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+              $lookup: {
+                from: "agencies",
+                localField: "agency",
+                foreignField: "_id",
+                as: "agency",
+                pipeline: [{ $project: { name: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $addFields: {
+                agency: { $arrayElemAt: ["$agency", 0] },
+                createdBy: { $arrayElemAt: ["$createdBy", 0] }
+              }
+            }
+          ],
+          count: [{ $count: "total" }]
+        }
+      }
+    ]);
 
-    const total = await ItemType.countDocuments(filter);
+    const itemTypes = results[0].data;
+    const total = results[0].count[0]?.total || 0;
 
     return res.json({
       success: true,

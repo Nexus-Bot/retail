@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import jwt, { SignOptions } from "jsonwebtoken";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import User from "../models/User";
 import Agency from "../models/Agency";
 import { UserRole } from "../types/auth";
@@ -182,7 +183,7 @@ export const getUsers = async (req: Request, res: Response) => {
 
     // Role-based filtering
     if (currentUser?.role === UserRole.OWNER) {
-      filter.agency = currentUser.agencyId;
+      filter.agency = new mongoose.Types.ObjectId(currentUser.agencyId);
     }
 
     if (search) {
@@ -194,15 +195,53 @@ export const getUsers = async (req: Request, res: Response) => {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const users = await User.find(filter)
-      .populate("agency", "name")
-      .populate("createdBy", "username")
-      .select("-password")
-      .skip(skip)
-      .limit(Number(limit))
-      .sort({ createdAt: -1 });
+    // Single aggregation for both data and count
+    const results = await User.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+              $lookup: {
+                from: "agencies",
+                localField: "agency",
+                foreignField: "_id",
+                as: "agency",
+                pipeline: [{ $project: { name: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $addFields: {
+                agency: { $arrayElemAt: ["$agency", 0] },
+                createdBy: { $arrayElemAt: ["$createdBy", 0] }
+              }
+            },
+            {
+              $project: {
+                password: 0, // Exclude password field
+                activeSessions: 0 // Exclude sensitive session data
+              }
+            }
+          ],
+          count: [{ $count: "total" }]
+        }
+      }
+    ]);
 
-    const total = await User.countDocuments(filter);
+    const users = results[0].data;
+    const total = results[0].count[0]?.total || 0;
 
     res.json({
       success: true,

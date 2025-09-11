@@ -196,24 +196,75 @@ export const getItems = async (req: Request, res: Response) => {
       currentUser?.role === UserRole.OWNER ||
       currentUser?.role === UserRole.EMPLOYEE
     ) {
-      filter.agency = currentUser.agencyId;
+      filter.agency = new mongoose.Types.ObjectId(currentUser.agencyId);
     }
 
     if (status) filter.status = status;
-    if (itemTypeId) filter.itemType = itemTypeId;
+    if (itemTypeId) filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const items = await Item.find(filter)
-      .populate("itemType", "name grouping description")
-      .populate("agency", "name")
-      .populate("createdBy", "username")
-      .populate("currentHolder", "username")
-      .skip(skip)
-      .limit(Number(limit))
-      .sort({ createdAt: -1 });
+    // Single aggregation for both data and count
+    const results = await Item.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+              $lookup: {
+                from: "itemtypes",
+                localField: "itemType",
+                foreignField: "_id",
+                as: "itemType",
+                pipeline: [{ $project: { name: 1, grouping: 1, description: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "agencies",
+                localField: "agency",
+                foreignField: "_id",
+                as: "agency",
+                pipeline: [{ $project: { name: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "currentHolder",
+                foreignField: "_id",
+                as: "currentHolder",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $addFields: {
+                itemType: { $arrayElemAt: ["$itemType", 0] },
+                agency: { $arrayElemAt: ["$agency", 0] },
+                createdBy: { $arrayElemAt: ["$createdBy", 0] },
+                currentHolder: { $arrayElemAt: ["$currentHolder", 0] }
+              }
+            }
+          ],
+          count: [{ $count: "total" }]
+        }
+      }
+    ]);
 
-    const total = await Item.countDocuments(filter);
+    const items = results[0].data;
+    const total = results[0].count[0]?.total || 0;
 
     // Get summary by item type - use separate filter for summary (exclude limit-related filters)
     const summaryFilter: any = {};
@@ -398,39 +449,82 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       });
     }
 
-    // Update all found items using the utility function
-    const updatedItems = [];
-    for (const item of itemsFound) {
-      try {
-        await updateSingleItem(
-          item,
-          { status, currentHolder },
-          currentUser
-        );
-        updatedItems.push(item);
-      } catch (error: any) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
+    // Validate business rules before bulk update
+    const updateData: any = {};
+    if (status) {
+      // Validate status transitions for all items
+      for (const item of itemsFound) {
+        if (item.status === ItemStatus.SOLD) {
+          if (currentUser?.role === UserRole.EMPLOYEE && status !== ItemStatus.WITH_EMPLOYEE) {
+            return res.status(400).json({
+              success: false,
+              message: "Employees can only change sold items to with_employee status",
+            });
+          }
+          if (status === ItemStatus.SOLD) {
+            return res.status(400).json({
+              success: false,
+              message: "Item is already sold",
+            });
+          }
+        }
       }
+      updateData.status = status;
     }
 
-    // Populate updated items
+    if (currentHolder) {
+      if (status === ItemStatus.WITH_EMPLOYEE) {
+        // Validate employee exists and belongs to same agency
+        const employee = await User.findById(currentHolder);
+        if (!employee) {
+          return res.status(404).json({
+            success: false,
+            message: "Employee not found",
+          });
+        }
+        if (employee.agency?.toString() !== currentUser?.agencyId) {
+          return res.status(400).json({
+            success: false,
+            message: "Employee not in your agency",
+          });
+        }
+      }
+      updateData.currentHolder = status === ItemStatus.WITH_EMPLOYEE ? currentHolder : null;
+    }
+
+    updateData.updatedAt = new Date();
+
+    // Perform bulk update - single database operation
+    const itemIds = itemsFound.map(item => item._id);
+    const bulkUpdateResult = await Item.updateMany(
+      { _id: { $in: itemIds } },
+      { $set: updateData }
+    );
+
+    if (bulkUpdateResult.modifiedCount === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No items were updated",
+      });
+    }
+
+    // Populate updated items for response
     const populatedItems = await Item.find({
-      _id: { $in: updatedItems.map((item) => item._id) },
+      _id: { $in: itemIds },
     })
       .populate("itemType", "name grouping description")
       .populate("agency", "name")
       .populate("createdBy", "username")
-      .populate("currentHolder", "username");
+      .populate("currentHolder", "username")
+      .limit(5); // Limit response size for large bulk operations
 
     return res.json({
       success: true,
-      message: `${updatedItems.length} items updated successfully`,
+      message: `${bulkUpdateResult.modifiedCount} items updated successfully`,
       data: {
-        itemsUpdated: updatedItems.length,
-        items: populatedItems,
+        itemsUpdated: bulkUpdateResult.modifiedCount,
+        sampleItems: populatedItems,
+        totalItemsRequested: itemsToUpdate,
       },
     });
   } catch (error) {
@@ -532,24 +626,75 @@ export const getMyItems = async (req: Request, res: Response) => {
     }
 
     const filter: any = {
-      currentHolder: currentUser.id,
+      currentHolder: new mongoose.Types.ObjectId(currentUser.id),
     };
 
     if (status) filter.status = status;
-    if (itemTypeId) filter.itemType = itemTypeId;
+    if (itemTypeId) filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const items = await Item.find(filter)
-      .populate("itemType", "name grouping description")
-      .populate("agency", "name")
-      .populate("createdBy", "username")
-      .populate("currentHolder", "username")
-      .skip(skip)
-      .limit(Number(limit))
-      .sort({ updatedAt: -1 });
+    // Single aggregation for both data and count
+    const results = await Item.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          data: [
+            { $sort: { updatedAt: -1 } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            {
+              $lookup: {
+                from: "itemtypes",
+                localField: "itemType",
+                foreignField: "_id",
+                as: "itemType",
+                pipeline: [{ $project: { name: 1, grouping: 1, description: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "agencies",
+                localField: "agency",
+                foreignField: "_id",
+                as: "agency",
+                pipeline: [{ $project: { name: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "currentHolder",
+                foreignField: "_id",
+                as: "currentHolder",
+                pipeline: [{ $project: { username: 1 } }]
+              }
+            },
+            {
+              $addFields: {
+                itemType: { $arrayElemAt: ["$itemType", 0] },
+                agency: { $arrayElemAt: ["$agency", 0] },
+                createdBy: { $arrayElemAt: ["$createdBy", 0] },
+                currentHolder: { $arrayElemAt: ["$currentHolder", 0] }
+              }
+            }
+          ],
+          count: [{ $count: "total" }]
+        }
+      }
+    ]);
 
-    const total = await Item.countDocuments(filter);
+    const items = results[0].data;
+    const total = results[0].count[0]?.total || 0;
 
     // Get comprehensive summary including employee items AND agency inventory
     // This helps employees see both their items and available inventory per item type
@@ -606,6 +751,117 @@ export const getMyItems = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Get my items error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const bulkDeleteItems = async (req: Request, res: Response) => {
+  try {
+    const {
+      itemTypeId,
+      quantity,
+      groupQuantity,
+      groupName,
+      status: currentStatus,
+      confirmDelete,
+    } = req.body;
+    const currentUser = req.user;
+
+    if (!confirmDelete) {
+      return res.status(400).json({
+        success: false,
+        message: "Bulk delete requires explicit confirmation",
+      });
+    }
+
+    if (!itemTypeId) {
+      return res.status(400).json({
+        success: false,
+        message: "Item type ID is required",
+      });
+    }
+
+    // Validate item type exists and belongs to agency
+    const itemType = await ItemType.findById(itemTypeId);
+    if (!itemType || itemType.agency.toString() !== currentUser?.agencyId) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid item type or not from your agency",
+      });
+    }
+
+    // Calculate number of items to delete
+    let itemsToDelete = quantity || 1;
+    if (groupQuantity && groupName) {
+      const grouping = itemType.getGroupingByName(groupName);
+      if (!grouping) {
+        return res.status(400).json({
+          success: false,
+          message: `Grouping "${groupName}" not found in item type`,
+        });
+      }
+      itemsToDelete = groupQuantity * grouping.unitsPerGroup;
+    }
+
+    // Build filter for items to delete
+    const filter: any = {
+      itemType: itemTypeId,
+      agency: currentUser?.agencyId,
+    };
+
+    // Filter by current status if provided
+    if (currentStatus) {
+      filter.status = currentStatus;
+    }
+
+    // Employee access control
+    if (currentUser?.role === UserRole.EMPLOYEE) {
+      filter.currentHolder = currentUser.id;
+    }
+
+    // Find items to delete
+    const itemsFound = await Item.find(filter).limit(itemsToDelete);
+
+    if (itemsFound.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No items found matching criteria",
+      });
+    }
+
+    if (itemsFound.length < itemsToDelete) {
+      return res.status(400).json({
+        success: false,
+        message: `Only ${itemsFound.length} items available, requested ${itemsToDelete}`,
+      });
+    }
+
+    // Business rule: Prevent deletion of sold items
+    const soldItems = itemsFound.filter(item => item.status === ItemStatus.SOLD);
+    if (soldItems.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete ${soldItems.length} sold items. Sold items should be archived instead.`,
+      });
+    }
+
+    // Perform bulk delete on specific items found
+    const itemIds = itemsFound.map(item => item._id);
+    const deleteResult = await Item.deleteMany({ _id: { $in: itemIds } });
+
+    return res.json({
+      success: true,
+      message: `${deleteResult.deletedCount} items deleted successfully`,
+      data: {
+        itemsDeleted: deleteResult.deletedCount,
+        totalItemsRequested: itemsToDelete,
+      },
+    });
+  } catch (error) {
+    console.error("Bulk delete items error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

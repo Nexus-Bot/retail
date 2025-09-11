@@ -7,6 +7,7 @@ import {
   getItem, 
   updateItem,
   bulkUpdateItems,
+  bulkDeleteItems,
   getMyItems
 } from '../../controllers/itemController';
 
@@ -20,6 +21,9 @@ router.post('/', authorize(Permission.CREATE_INVENTORY), createItems);
 
 // Bulk update items - update multiple items at once
 router.patch('/bulk', authorize(Permission.UPDATE_INVENTORY), bulkUpdateItems);
+
+// Bulk delete items - delete multiple items at once (requires delete permission)
+router.delete('/bulk', authorize(Permission.DELETE_INVENTORY), bulkDeleteItems);
 
 // Get all items - requires read inventory permission
 router.get('/', authorize(Permission.READ_INVENTORY), getItems);
