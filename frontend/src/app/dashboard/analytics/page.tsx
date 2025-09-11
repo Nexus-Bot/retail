@@ -5,7 +5,7 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, DollarSign, Package, Users, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Package, Calendar } from 'lucide-react';
 import { UserRole } from '@/types/api';
 
 function AnalyticsContent() {

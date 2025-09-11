@@ -9,14 +9,16 @@ export interface ApiErrorResponse {
   code?: string;
 }
 
-// Generic API Error
-export interface ApiError extends AxiosError {
+// Generic API Error - Use type instead of interface to avoid extends conflicts
+export type ApiError = AxiosError & {
   response?: {
     data: ApiErrorResponse;
     status: number;
     statusText: string;
+    headers: any;
+    config: any;
   };
-}
+};
 
 // Error handling utility functions
 export class ErrorHandler {
