@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import Item, { ItemStatus } from "../models/Item";
 import ItemType from "../models/ItemType";
 import User from "../models/User";
@@ -253,9 +254,23 @@ export const getItems = async (req: Request, res: Response) => {
 
     const total = await Item.countDocuments(filter);
 
-    // Get summary by item type
+    // Get summary by item type - use separate filter for summary (exclude limit-related filters)
+    const summaryFilter: any = {};
+    
+    // Role-based filtering for summary
+    if (
+      currentUser?.role === UserRole.OWNER ||
+      currentUser?.role === UserRole.EMPLOYEE
+    ) {
+      summaryFilter.agency = new mongoose.Types.ObjectId(currentUser.agencyId);
+    }
+
+    // Only include status and itemType filters for summary, not pagination
+    if (status) summaryFilter.status = status;
+    if (itemTypeId) summaryFilter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+
     const summary = await Item.aggregate([
-      { $match: filter },
+      { $match: summaryFilter },
       {
         $group: {
           _id: { itemType: "$itemType", status: "$status" },
@@ -588,10 +603,52 @@ export const getMyItems = async (req: Request, res: Response) => {
 
     const total = await Item.countDocuments(filter);
 
+    // Get comprehensive summary including employee items AND agency inventory
+    // This helps employees see both their items and available inventory per item type
+    const agencySummaryFilter: any = {
+      agency: new mongoose.Types.ObjectId(currentUser.agencyId),
+    };
+    
+    // Include status and itemType filters for summary
+    if (status) agencySummaryFilter.status = status;
+    if (itemTypeId) agencySummaryFilter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+
+    const summary = await Item.aggregate([
+      { $match: agencySummaryFilter },
+      {
+        $group: {
+          _id: { itemType: "$itemType", status: "$status" },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $lookup: {
+          from: "itemtypes",
+          localField: "_id.itemType",
+          foreignField: "_id",
+          as: "itemType",
+        },
+      },
+      {
+        $group: {
+          _id: "$_id.itemType",
+          itemTypeName: { $first: { $arrayElemAt: ["$itemType.name", 0] } },
+          statusCounts: {
+            $push: {
+              status: "$_id.status",
+              count: "$count",
+            },
+          },
+          totalCount: { $sum: "$count" },
+        },
+      },
+    ]);
+
     return res.json({
       success: true,
       message: "Items currently held by you",
       data: items,
+      summary,
       pagination: {
         currentPage: Number(page),
         totalPages: Math.ceil(total / Number(limit)),

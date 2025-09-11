@@ -43,18 +43,22 @@ export const login = async (req: Request, res: Response) => {
 
     // Generate unique token ID for session tracking
     const tokenId = crypto.randomUUID();
-    
-    const token = jwt.sign({ 
-      id: user._id, 
-      tokenId 
-    }, jwtSecret, {
-      expiresIn: process.env.JWT_EXPIRE || "30d",
-    } as SignOptions);
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        tokenId,
+      },
+      jwtSecret,
+      {
+        expiresIn: process.env.JWT_EXPIRE || "30d",
+      } as SignOptions
+    );
 
     // Add session to user's active sessions
-    const userAgent = req.get('User-Agent');
+    const userAgent = req.get("User-Agent");
     const ipAddress = req.ip || req.socket?.remoteAddress;
-    
+
     user.addSession(tokenId, userAgent, ipAddress);
     user.lastLogin = new Date();
     await user.save();
@@ -162,7 +166,9 @@ export const createUser = async (req: Request, res: Response) => {
       const field = Object.keys(error.keyPattern)[0];
       return res.status(400).json({ message: `${field} already exists` });
     }
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Server error", error: error.message });
   }
 };
 
@@ -198,7 +204,8 @@ export const getUsers = async (req: Request, res: Response) => {
     const total = await User.countDocuments(filter);
 
     res.json({
-      users,
+      success: true,
+      data: users,
       pagination: {
         currentPage: Number(page),
         totalPages: Math.ceil(total / Number(limit)),
@@ -217,11 +224,11 @@ export const getUsers = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   try {
     const currentUser = req.user;
-    
+
     if (!currentUser?.tokenId) {
       return res.status(400).json({
         success: false,
-        message: "No active session found"
+        message: "No active session found",
       });
     }
 
@@ -229,7 +236,7 @@ export const logout = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -239,7 +246,7 @@ export const logout = async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
-      message: "Logged out successfully"
+      message: "Logged out successfully",
     });
   } catch (error) {
     return res.status(500).json({
@@ -253,11 +260,11 @@ export const logout = async (req: Request, res: Response) => {
 export const logoutAll = async (req: Request, res: Response) => {
   try {
     const currentUser = req.user;
-    
+
     if (!currentUser?.id) {
       return res.status(400).json({
         success: false,
-        message: "User not authenticated"
+        message: "User not authenticated",
       });
     }
 
@@ -265,7 +272,7 @@ export const logoutAll = async (req: Request, res: Response) => {
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -276,7 +283,7 @@ export const logoutAll = async (req: Request, res: Response) => {
     return res.json({
       success: true,
       message: "Logged out from all sessions successfully",
-      sessionsRemoved: user.activeSessions.length
+      sessionsRemoved: user.activeSessions.length,
     });
   } catch (error) {
     return res.status(500).json({

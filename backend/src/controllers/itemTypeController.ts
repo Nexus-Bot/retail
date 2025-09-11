@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
-import ItemType from '../models/ItemType';
-import { UserRole } from '../types/auth';
+import { Request, Response } from "express";
+import ItemType from "../models/ItemType";
+import { UserRole } from "../types/auth";
 
 export const createItemType = async (req: Request, res: Response) => {
   try {
@@ -10,7 +10,7 @@ export const createItemType = async (req: Request, res: Response) => {
     if (!name) {
       return res.status(400).json({
         success: false,
-        message: 'Name is required',
+        message: "Name is required",
       });
     }
 
@@ -18,7 +18,7 @@ export const createItemType = async (req: Request, res: Response) => {
     if (currentUser?.role !== UserRole.OWNER) {
       return res.status(403).json({
         success: false,
-        message: 'Only agency owners can create item types',
+        message: "Only agency owners can create item types",
       });
     }
 
@@ -28,14 +28,14 @@ export const createItemType = async (req: Request, res: Response) => {
         if (!group.groupName || !group.unitsPerGroup) {
           return res.status(400).json({
             success: false,
-            message: 'Each grouping requires groupName and unitsPerGroup',
+            message: "Each grouping requires groupName and unitsPerGroup",
           });
         }
 
         if (group.unitsPerGroup < 1) {
           return res.status(400).json({
             success: false,
-            message: 'Units per group must be at least 1',
+            message: "Units per group must be at least 1",
           });
         }
       }
@@ -44,32 +44,32 @@ export const createItemType = async (req: Request, res: Response) => {
     const itemType = new ItemType({
       name,
       description,
-      grouping: (grouping && grouping.length > 0) ? grouping : undefined,
+      grouping: grouping && grouping.length > 0 ? grouping : undefined,
       agency: currentUser.agencyId,
       createdBy: currentUser.id,
     });
 
     await itemType.save();
-    await itemType.populate('agency', 'name');
-    await itemType.populate('createdBy', 'username');
+    await itemType.populate("agency", "name");
+    await itemType.populate("createdBy", "username");
 
     return res.status(201).json({
       success: true,
-      message: 'Item type created successfully',
+      message: "Item type created successfully",
       data: itemType,
     });
   } catch (error: any) {
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Item type with this name already exists in your agency',
+        message: "Item type with this name already exists in your agency",
       });
     }
 
-    console.error('Create item type error:', error);
+    console.error("Create item type error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
     });
   }
 };
@@ -82,19 +82,22 @@ export const getItemTypes = async (req: Request, res: Response) => {
     const filter: any = { isActive };
 
     // Role-based filtering
-    if (currentUser?.role === UserRole.OWNER || currentUser?.role === UserRole.EMPLOYEE) {
+    if (
+      currentUser?.role === UserRole.OWNER ||
+      currentUser?.role === UserRole.EMPLOYEE
+    ) {
       filter.agency = currentUser.agencyId;
     }
 
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      filter.name = { $regex: search, $options: "i" };
     }
 
     const skip = (Number(page) - 1) * Number(limit);
 
     const itemTypes = await ItemType.find(filter)
-      .populate('agency', 'name')
-      .populate('createdBy', 'username')
+      .populate("agency", "name")
+      .populate("createdBy", "username")
       .skip(skip)
       .limit(Number(limit))
       .sort({ createdAt: -1 });
@@ -112,10 +115,10 @@ export const getItemTypes = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get item types error:', error);
+    console.error("Get item types error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
     });
   }
 };
@@ -126,24 +129,22 @@ export const getItemType = async (req: Request, res: Response) => {
     const currentUser = req.user;
 
     const itemType = await ItemType.findById(id)
-      .populate('agency', 'name')
-      .populate('createdBy', 'username');
+      .populate("agency", "name")
+      .populate("createdBy", "username");
 
     if (!itemType) {
       return res.status(404).json({
         success: false,
-        message: 'Item type not found',
+        message: "Item type not found",
       });
     }
 
+    const agencyId = itemType.agency.id as unknown as string;
     // Role-based access control
-    if (
-      currentUser?.role !== UserRole.MASTER &&
-      itemType.agency.toString() !== currentUser?.agencyId
-    ) {
+    if (agencyId !== currentUser?.agencyId) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied',
+        message: "Access denied",
       });
     }
 
@@ -152,10 +153,10 @@ export const getItemType = async (req: Request, res: Response) => {
       data: itemType,
     });
   } catch (error) {
-    console.error('Get item type error:', error);
+    console.error("Get item type error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
     });
   }
 };
@@ -170,7 +171,7 @@ export const updateItemType = async (req: Request, res: Response) => {
     if (!itemType) {
       return res.status(404).json({
         success: false,
-        message: 'Item type not found',
+        message: "Item type not found",
       });
     }
 
@@ -181,7 +182,7 @@ export const updateItemType = async (req: Request, res: Response) => {
     ) {
       return res.status(403).json({
         success: false,
-        message: 'Only agency owners can update item types',
+        message: "Only agency owners can update item types",
       });
     }
 
@@ -191,14 +192,14 @@ export const updateItemType = async (req: Request, res: Response) => {
         if (!group.groupName || !group.unitsPerGroup) {
           return res.status(400).json({
             success: false,
-            message: 'Each grouping requires groupName and unitsPerGroup',
+            message: "Each grouping requires groupName and unitsPerGroup",
           });
         }
 
         if (group.unitsPerGroup < 1) {
           return res.status(400).json({
             success: false,
-            message: 'Units per group must be at least 1',
+            message: "Units per group must be at least 1",
           });
         }
       }
@@ -208,31 +209,32 @@ export const updateItemType = async (req: Request, res: Response) => {
     if (name) itemType.name = name;
     if (description !== undefined) itemType.description = description;
     if (grouping !== undefined) {
-      itemType.grouping = (grouping && grouping.length > 0) ? grouping : undefined;
+      itemType.grouping =
+        grouping && grouping.length > 0 ? grouping : undefined;
     }
     if (isActive !== undefined) itemType.isActive = isActive;
 
     await itemType.save();
-    await itemType.populate('agency', 'name');
-    await itemType.populate('createdBy', 'username');
+    await itemType.populate("agency", "name");
+    await itemType.populate("createdBy", "username");
 
     return res.json({
       success: true,
-      message: 'Item type updated successfully',
+      message: "Item type updated successfully",
       data: itemType,
     });
   } catch (error: any) {
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
-        message: 'Item type with this name already exists in your agency',
+        message: "Item type with this name already exists in your agency",
       });
     }
 
-    console.error('Update item type error:', error);
+    console.error("Update item type error:", error);
     return res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: "Internal server error",
     });
   }
 };
