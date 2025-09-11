@@ -8,10 +8,8 @@ dotenv.config();
 const createMasterUser = async () => {
   try {
     // Connect to database
-    const mongoUri =
-      process.env.MONGODB_URI_DEV ||
-      "mongodb://localhost:27017/retail-inventory-dev";
-    await mongoose.connect(mongoUri);
+    const mongoUri = process.env.MONGODB_URI;
+    await mongoose.connect(mongoUri as string);
     console.log("📦 Connected to MongoDB");
 
     // Check if master user already exists
