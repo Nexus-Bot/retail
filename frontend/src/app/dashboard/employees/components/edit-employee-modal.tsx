@@ -7,9 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { UpdateUserRequest, User } from '@/types/api';
-import { usersAPI } from '@/lib/api';
+import { useUpdateUserMutation } from '@/hooks/use-queries';
 import { toast } from 'sonner';
 
 interface EditEmployeeModalProps {
@@ -19,7 +18,6 @@ interface EditEmployeeModalProps {
 }
 
 export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeModalProps) {
-  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     username: '',
     status: 'active' as 'active' | 'inactive' | 'suspended',
@@ -37,21 +35,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeMod
     }
   }, [employee]);
 
-  const updateEmployeeMutation = useMutation({
-    mutationFn: (data: UpdateUserRequest) => {
-      if (!employee) throw new Error('No employee selected');
-      return usersAPI.updateUser(employee._id, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      toast.success('Employee updated successfully');
-      handleClose();
-    },
-    onError: (error: unknown) => {
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update employee';
-      toast.error(errorMessage);
-    },
-  });
+  const updateEmployeeMutation = useUpdateUserMutation();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,7 +67,24 @@ export function EditEmployeeModal({ isOpen, onClose, employee }: EditEmployeeMod
       updateData.password = formData.password;
     }
 
-    updateEmployeeMutation.mutate(updateData);
+    if (!employee) {
+      toast.error('No employee selected');
+      return;
+    }
+    
+    updateEmployeeMutation.mutate(
+      { id: employee._id, data: updateData },
+      {
+        onSuccess: () => {
+          toast.success('Employee updated successfully');
+          handleClose();
+        },
+        onError: (error: unknown) => {
+          const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update employee';
+          toast.error(errorMessage);
+        },
+      }
+    );
   };
 
   const handleClose = () => {

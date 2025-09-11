@@ -9,37 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShoppingBag, Search, Edit, TrendingUp, Loader2 } from 'lucide-react';
-import { itemsAPI, itemTypesAPI } from '@/lib/api';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/auth-context';
+import { useItemTypes, useMyItemsSummary } from '@/hooks/use-queries';
 import { UserRole, ItemStatus, ItemTypeSummary } from '@/types/api';
 import { BulkUpdateItemsModal } from './components/bulk-update-items-modal';
 
 function MyItemsContent() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItemType, setSelectedItemType] = useState<string>('');
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
 
-  // Fetch item types
-  const { data: itemTypesData } = useQuery({
-    queryKey: ['itemTypes', user?.agency?._id],
-    queryFn: () => itemTypesAPI.getItemTypes({ limit: 1000 }),
-    enabled: !!user?.agency?._id,
-    staleTime: 60000,
-  });
+  // Fetch item types using optimized hook
+  const { data: itemTypesData } = useItemTypes();
 
-  // Fetch my items summary (items assigned to current employee)
-  const { data: myItemsSummary, isLoading: isLoadingSummary, error } = useQuery({
-    queryKey: ['myItemsSummary', user?._id],
-    queryFn: async () => {
-      const response = await itemsAPI.getMyItems({ limit: 1 });
-      return response.data;
-    },
-    enabled: !!user?._id,
-    staleTime: 30000,
-  });
+  // Fetch my items summary (items assigned to current employee) using optimized hook
+  const { data: myItemsSummary, isLoading: isLoadingSummary, error, refetch: refetchSummary } = useMyItemsSummary();
 
   const itemTypes = itemTypesData?.data?.data || [];
   const summary: ItemTypeSummary[] = myItemsSummary?.summary || [];
@@ -112,7 +95,7 @@ function MyItemsContent() {
               <p>{error?.message || 'An error occurred'}</p>
               <Button 
                 variant="outline" 
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['myItemsSummary'] })} 
+                onClick={() => refetchSummary()} 
                 className="mt-2"
               >
                 Retry

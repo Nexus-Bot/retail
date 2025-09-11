@@ -11,30 +11,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Package, Plus, Search, Edit, Loader2 } from 'lucide-react';
 import { UserRole } from '@/types/api';
 import { useAuth } from '@/contexts/auth-context';
-import { itemTypesAPI } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useItemTypes } from '@/hooks/use-queries';
 import type { ItemType } from '@/types/api';
 import { CreateItemTypeModal } from './components/create-item-type-modal';
 import { EditItemTypeModal } from './components/edit-item-type-modal';
 
 function ItemTypesContent() {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedItemType, setSelectedItemType] = useState<ItemType | null>(null);
 
-  // Fetch item types from the backend
-  const { data: itemTypesData, isLoading, error } = useQuery({
-    queryKey: ['item-types', user?.agency?._id, searchTerm],
-    queryFn: () => itemTypesAPI.getItemTypes({ 
-      search: searchTerm || undefined,
-      limit: 100 
-    }),
-    enabled: !!user?.agency?._id,
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
+  // Fetch item types from the backend using optimized hook
+  const { data: itemTypesData, isLoading, error } = useItemTypes({
+    search: searchTerm || undefined,
+    limit: 100
   });
 
   const itemTypes = itemTypesData?.data?.data || [];

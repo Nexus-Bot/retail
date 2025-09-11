@@ -17,8 +17,7 @@ import {
 } from "@/components/ui/table";
 import { User, Plus, Search, Building2, Loader2, Edit } from "lucide-react";
 import { UserRole, User as ApiUser } from "@/types/api";
-import { usersAPI } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useUsers } from "@/hooks/use-queries";
 import { CreateUserModal } from './components/create-user-modal';
 import { EditUserModal } from './components/edit-user-modal';
 function AllUsersContent() {
@@ -32,19 +31,13 @@ function AllUsersContent() {
     isLoading: loading,
     error,
     refetch: refetchUsers,
-  } = useQuery({
-    queryKey: ["users"],
-    queryFn: async () => {
-      const response = await usersAPI.getUsers({ limit: 100 }); // Get more users per page
-      return response.data;
-    },
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    retry: 2,
+  } = useUsers({
+    limit: 100,
+    search: searchTerm || undefined,
   });
 
-  const users = usersResponse?.data || [];
-  const pagination = usersResponse?.pagination;
+  const users = usersResponse?.data?.data || [];
+  const pagination = usersResponse?.data?.pagination;
 
   const filteredUsers = users.filter((user: ApiUser) =>
     user.username.toLowerCase().includes(searchTerm.toLowerCase())

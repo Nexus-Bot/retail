@@ -13,9 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { agenciesAPI } from "@/lib/api";
 import { Agency, UserRole } from "@/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { useAgencies } from "@/hooks/use-queries";
 import { Building2, Loader2, Plus, Search, Edit } from "lucide-react";
 import { useState } from "react";
 import { CreateAgencyModal } from './components/create-agency-modal';
@@ -28,20 +27,13 @@ function AllAgenciesContent() {
   const [selectedAgency, setSelectedAgency] = useState<Agency | null>(null);
 
   const {
-    data: agencies = [],
+    data: agenciesResponse,
     isLoading: loading,
     error,
     refetch: refetchAgencies,
-  } = useQuery({
-    queryKey: ["agencies"],
-    queryFn: async () => {
-      const response = await agenciesAPI.getAgencies();
-      return response?.data?.data ?? [];
-    },
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    retry: 2,
-  });
+  } = useAgencies();
+
+  const agencies = agenciesResponse?.data?.data || [];
 
   const filteredAgencies = agencies.filter((agency: Agency) =>
     agency.name.toLowerCase().includes(searchTerm.toLowerCase())

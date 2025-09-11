@@ -9,9 +9,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
-import { itemsAPI, usersAPI } from "@/lib/api";
 import { ItemStatus, User, UserRole } from "@/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { useOwnerDashboard } from "@/hooks/use-queries";
 import { Loader2, Package, TrendingUp, Users, BarChart3, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -26,27 +25,11 @@ export function OwnerDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Fetch items data
-  const { data: itemsData, isLoading: itemsLoading } = useQuery({
-    queryKey: ["owner-items", user?.agency?._id],
-    queryFn: () => itemsAPI.getItems({ limit: 1000 }),
-    enabled: !!user?.agency?._id,
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-
-  // Fetch users/employees data
-  const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ["agency-users", user?.agency?._id],
-    queryFn: () => usersAPI.getUsers({ limit: 1000 }),
-    enabled: !!user?.agency?._id,
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
-  });
-
-  const loading = itemsLoading || usersLoading;
+  // Fetch dashboard data using optimized hook
+  const { items: itemsQuery, users: usersQuery, isLoading } = useOwnerDashboard();
+  
+  const itemsData = itemsQuery.data;
+  const usersData = usersQuery.data;
 
   // Calculate stats from real data
   const items = itemsData?.data?.data || [];
@@ -87,7 +70,7 @@ export function OwnerDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Loading...</span>
@@ -111,7 +94,7 @@ export function OwnerDashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Loading...</span>
@@ -133,7 +116,7 @@ export function OwnerDashboard() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm">Loading...</span>

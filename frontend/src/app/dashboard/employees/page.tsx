@@ -11,15 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Users, Search, UserPlus, Loader2, Edit } from 'lucide-react';
 import { UserRole, User } from '@/types/api';
-import { usersAPI } from '@/lib/api';
-import { useAuth } from '@/contexts/auth-context';
-import { useQuery } from '@tanstack/react-query';
+import { useUsers } from '@/hooks/use-queries';
 import { CreateEmployeeModal } from './components/create-employee-modal';
 import { EditEmployeeModal } from './components/edit-employee-modal';
 
 
 function EmployeesContent() {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -30,22 +27,12 @@ function EmployeesContent() {
     isLoading: loading,
     error,
     refetch: refetchEmployees
-  } = useQuery({
-    queryKey: ['employees', user?.agency?._id],
-    queryFn: async () => {
-      const response = await usersAPI.getUsers({ 
-        role: UserRole.EMPLOYEE
-      });
-      return response.data;
-    },
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 2,
-    enabled: !!user?.agency?._id,
+  } = useUsers({
+    role: UserRole.EMPLOYEE,
   });
 
   // Ensure employees is always an array to prevent filter errors
-  const employees = Array.isArray(employeesResponse?.data) ? employeesResponse.data : [];
+  const employees = Array.isArray(employeesResponse?.data?.data) ? employeesResponse.data.data : [];
 
   const filteredEmployees = employees.filter((employee: User) =>
     employee.username.toLowerCase().includes(searchTerm.toLowerCase())

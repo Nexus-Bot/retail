@@ -12,9 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { ShoppingBag, Loader2, Settings } from "lucide-react";
-import { itemsAPI } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useMyItems } from "@/hooks/use-queries";
 import { ItemStatus } from "@/types/api";
 
 export function EmployeeDashboard() {
@@ -26,14 +25,9 @@ export function EmployeeDashboard() {
     isLoading: loading,
     error,
     refetch: refetchStats,
-  } = useQuery({
-    queryKey: ["employee-my-items", user?._id],
-    queryFn: () =>
-      itemsAPI.getMyItems({ limit: 1000, status: ItemStatus.WITH_EMPLOYEE }),
-    enabled: !!user?._id,
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
+  } = useMyItems({
+    limit: 1000,
+    status: ItemStatus.WITH_EMPLOYEE,
   });
 
   const myItemsCount = myItemsData?.data?.data?.length || 0;

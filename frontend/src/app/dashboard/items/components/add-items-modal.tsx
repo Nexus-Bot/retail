@@ -7,9 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Package, Loader2 } from 'lucide-react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateItemsRequest } from '@/types/api';
-import { itemTypesAPI, itemsAPI } from '@/lib/api';
+import { useItemTypes, useCreateItemsMutation } from '@/hooks/use-queries';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 
@@ -19,8 +18,6 @@ interface AddItemsModalProps {
 }
 
 export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     itemTypeId: '',
     quantity: '1',
@@ -28,31 +25,30 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
     groupName: '',
   });
 
-  // Fetch item types from the backend
-  const { data: itemTypesData, isLoading: itemTypesLoading } = useQuery({
-    queryKey: ['item-types', user?.agency?._id],
-    queryFn: () => itemTypesAPI.getItemTypes({ limit: 100, isActive: true }),
-    enabled: !!user?.agency?._id && isOpen,
-    staleTime: 60000,
-    gcTime: 5 * 60 * 1000,
-    retry: 1,
+  // Fetch item types from the backend using optimized hook
+  const { data: itemTypesData, isLoading: itemTypesLoading } = useItemTypes({
+    limit: 100
   });
 
   const itemTypes = itemTypesData?.data?.data || [];
   const selectedItemType = itemTypes.find(type => type._id === formData.itemTypeId);
 
-  const createItemsMutation = useMutation({
-    mutationFn: (data: CreateItemsRequest) => itemsAPI.createItems(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['itemsSummary'] });
-      toast.success('Items added successfully');
-      handleClose();
-    },
-    onError: (error: unknown) => {
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to add items';
-      toast.error(errorMessage);
-    },
-  });
+  // Use optimized mutation hook
+  const createItemsMutation = useCreateItemsMutation();
+
+  // Override the mutation to add success/error handling
+  const handleCreateItems = (data: CreateItemsRequest) => {
+    createItemsMutation.mutate(data, {
+      onSuccess: () => {
+        toast.success('Items added successfully');
+        handleClose();
+      },
+      onError: (error: unknown) => {
+        const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to add items';
+        toast.error(errorMessage);
+      },
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,7 +100,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
       groupName: formData.groupName || undefined,
     };
 
-    createItemsMutation.mutate(submitData);
+    handleCreateItems(submitData);
   };
 
   const handleClose = () => {

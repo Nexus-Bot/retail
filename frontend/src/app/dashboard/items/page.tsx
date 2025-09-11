@@ -11,44 +11,29 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Package, Plus, Search, Edit, Loader2 } from 'lucide-react';
 import { UserRole, ItemStatus, ItemTypeSummary } from '@/types/api';
 import { useAuth } from '@/contexts/auth-context';
-import { itemsAPI, itemTypesAPI } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useItemTypes, useItemsSummary } from '@/hooks/use-queries';
 import { AddItemsModal } from './components/add-items-modal';
 import { BulkOperationsModal } from './components/bulk-operations-modal';
 
 function ItemsManagementContent() {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItemType, setSelectedItemType] = useState<string>('');
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  // Fetch item types and their summary
-  const { data: itemTypesData, isLoading: isLoadingTypes } = useQuery({
-    queryKey: ['itemTypes', user?.agency?._id],
-    queryFn: () => itemTypesAPI.getItemTypes({ limit: 1000 }),
-    enabled: !!user?.agency?._id,
-    staleTime: 60000,
+  // Fetch item types and their summary using optimized hooks
+  const { data: itemTypesData, isLoading: isLoadingTypes } = useItemTypes({
+    search: searchTerm || undefined,
   });
 
-  // Fetch items summary by item type
-  const { data: itemsSummary, isLoading: isLoadingSummary } = useQuery({
-    queryKey: ['itemsSummary', user?.agency?._id],
-    queryFn: async () => {
-      const response = await itemsAPI.getItems({ limit: 1 });
-      return response.data;
-    },
-    enabled: !!user?.agency?._id,
-    staleTime: 30000,
-  });
+  // Fetch items summary by item type (optimized - no unnecessary item fetching)
+  const { data: itemsSummary, isLoading: isLoadingSummary } = useItemsSummary();
 
   const itemTypes = itemTypesData?.data?.data || [];
   const summary: ItemTypeSummary[] = itemsSummary?.summary || [];
 
-  // Filter item types based on search term
-  const filteredItemTypes = itemTypes.filter(itemType => 
-    itemType.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Search is now handled server-side in the hook, no need for client-side filtering
+  const filteredItemTypes = itemTypes;
 
   // Get summary for a specific item type
   const getItemTypeSummary = (itemTypeId: string): ItemTypeSummary => {

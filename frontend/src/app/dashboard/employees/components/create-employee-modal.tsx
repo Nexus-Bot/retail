@@ -6,9 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CreateUserRequest, UserRole } from '@/types/api';
-import { usersAPI } from '@/lib/api';
+import { UserRole } from '@/types/api';
+import { useCreateUserMutation } from '@/hooks/use-queries';
 import { toast } from 'sonner';
 
 interface CreateEmployeeModalProps {
@@ -17,24 +16,12 @@ interface CreateEmployeeModalProps {
 }
 
 export function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeModalProps) {
-  const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
   });
 
-  const createEmployeeMutation = useMutation({
-    mutationFn: (data: CreateUserRequest) => usersAPI.createUser(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
-      toast.success('Employee created successfully');
-      handleClose();
-    },
-    onError: (error: unknown) => {
-      const errorMessage = (error as any)?.response?.data?.message || (error as Error)?.message || 'Failed to create employee';
-      toast.error(errorMessage);
-    },
-  });
+  const createEmployeeMutation = useCreateUserMutation();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -56,6 +43,15 @@ export function CreateEmployeeModal({ isOpen, onClose }: CreateEmployeeModalProp
       username: formData.username,
       password: formData.password,
       role: UserRole.EMPLOYEE,
+    }, {
+      onSuccess: () => {
+        toast.success('Employee created successfully');
+        handleClose();
+      },
+      onError: (error: unknown) => {
+        const errorMessage = (error as any)?.response?.data?.message || (error as Error)?.message || 'Failed to create employee';
+        toast.error(errorMessage);
+      },
     });
   };
 

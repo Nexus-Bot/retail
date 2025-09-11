@@ -20,15 +20,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   UserRole,
   ItemStatus,
   BulkUpdateItemsRequest,
   ItemType,
 } from "@/types/api";
-import { itemsAPI, usersAPI } from "@/lib/api";
-import { useAuth } from "@/contexts/auth-context";
+import { useUsers, useBulkUpdateItemsMutation } from "@/hooks/use-queries";
 import { toast } from "sonner";
 
 interface BulkOperationsModalProps {
@@ -46,8 +44,6 @@ export function BulkOperationsModal({
   selectedItemType,
   onItemTypeChange,
 }: BulkOperationsModalProps) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [bulkForm, setBulkForm] = useState({
     currentStatus: ItemStatus.IN_INVENTORY,
     newStatus: ItemStatus.WITH_EMPLOYEE,
@@ -59,14 +55,10 @@ export function BulkOperationsModal({
     notes: "",
   });
 
-  // Fetch employees for assignment
-  const { data: employeesData } = useQuery({
-    queryKey: ["employees", user?.agency?._id],
-    queryFn: () => usersAPI.getUsers({ role: UserRole.EMPLOYEE }),
-    enabled:
-      !!user?.agency?._id &&
-      bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE &&
-      isOpen,
+  // Fetch employees for assignment using optimized hook
+  const { data: employeesData } = useUsers({
+    role: UserRole.EMPLOYEE,
+    enabled: bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE && isOpen,
   });
 
   const employees = employeesData?.data?.data || [];
@@ -77,24 +69,8 @@ export function BulkOperationsModal({
   );
   const availableGroupings = selectedItemTypeData?.grouping || [];
 
-  // Bulk update mutation
-  const bulkUpdateMutation = useMutation({
-    mutationFn: (data: BulkUpdateItemsRequest) =>
-      itemsAPI.bulkUpdateItems(data),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["itemsSummary"] });
-      handleClose();
-      const itemsUpdated =
-        (response.data.data as { itemsUpdated: number })?.itemsUpdated || 0;
-      toast.success(`${itemsUpdated} items updated successfully`);
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || "Failed to update items";
-      toast.error(errorMessage);
-    },
-  });
+  // Bulk update mutation using optimized hook
+  const bulkUpdateMutation = useBulkUpdateItemsMutation();
 
   const handleBulkUpdate = () => {
     if (!selectedItemType) {
@@ -129,7 +105,20 @@ export function BulkOperationsModal({
       updateData.notes = bulkForm.notes;
     }
 
-    bulkUpdateMutation.mutate(updateData);
+    bulkUpdateMutation.mutate(updateData, {
+      onSuccess: (response) => {
+        handleClose();
+        const itemsUpdated =
+          (response.data.data as { itemsUpdated: number })?.itemsUpdated || 0;
+        toast.success(`${itemsUpdated} items updated successfully`);
+      },
+      onError: (error: unknown) => {
+        const errorMessage =
+          (error as { response?: { data?: { message?: string } } })?.response
+            ?.data?.message || "Failed to update items";
+        toast.error(errorMessage);
+      },
+    });
   };
 
   const handleClose = () => {

@@ -9,9 +9,15 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, Plus, Trash2, Package } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ItemType, UpdateItemTypeRequest, ItemTypeGrouping } from '@/types/api';
+import { ItemType, UpdateItemTypeRequest } from '@/types/api';
 import { itemTypesAPI } from '@/lib/api';
 import { toast } from 'sonner';
+
+// Local type for form state that allows strings for unitsPerGroup
+interface ItemTypeGroupingForm {
+  groupName: string;
+  unitsPerGroup: string | number;
+}
 
 interface EditItemTypeModalProps {
   isOpen: boolean;
@@ -26,7 +32,7 @@ export function EditItemTypeModal({ isOpen, onClose, itemType }: EditItemTypeMod
     description: '',
     isActive: true,
   });
-  const [groupings, setGroupings] = useState<ItemTypeGrouping[]>([]);
+  const [groupings, setGroupings] = useState<ItemTypeGroupingForm[]>([]);
 
   useEffect(() => {
     if (itemType) {
@@ -69,14 +75,14 @@ export function EditItemTypeModal({ isOpen, onClose, itemType }: EditItemTypeMod
   };
 
   const addGrouping = () => {
-    setGroupings(prev => [...prev, { groupName: '', unitsPerGroup: 1 }]);
+    setGroupings(prev => [...prev, { groupName: '', unitsPerGroup: '' }]);
   };
 
   const removeGrouping = (index: number) => {
     setGroupings(prev => prev.filter((_, i) => i !== index));
   };
 
-  const updateGrouping = (index: number, field: keyof ItemTypeGrouping, value: string | number) => {
+  const updateGrouping = (index: number, field: keyof ItemTypeGroupingForm, value: string | number) => {
     setGroupings(prev => prev.map((grouping, i) => 
       i === index ? { ...grouping, [field]: value } : grouping
     ));
@@ -92,7 +98,7 @@ export function EditItemTypeModal({ isOpen, onClose, itemType }: EditItemTypeMod
       return;
     }
 
-    if (groupings.some(g => !g.groupName.trim() || g.unitsPerGroup <= 0)) {
+    if (groupings.some(g => !g.groupName.trim() || !g.unitsPerGroup || (typeof g.unitsPerGroup === 'number' && g.unitsPerGroup <= 0))) {
       toast.error('All groupings must have a valid name and units per group');
       return;
     }
@@ -100,7 +106,10 @@ export function EditItemTypeModal({ isOpen, onClose, itemType }: EditItemTypeMod
     const submitData = {
       ...formData,
       description: formData.description || undefined,
-      grouping: groupings.length > 0 ? groupings : undefined,
+      grouping: groupings.length > 0 ? groupings.map(g => ({
+        ...g,
+        unitsPerGroup: typeof g.unitsPerGroup === 'string' ? parseInt(g.unitsPerGroup) : g.unitsPerGroup
+      })) : undefined,
     };
 
     updateItemTypeMutation.mutate({ id: itemType._id, updateData: submitData });
@@ -209,7 +218,10 @@ export function EditItemTypeModal({ isOpen, onClose, itemType }: EditItemTypeMod
                     inputMode="numeric"
                     placeholder="e.g., 16"
                     value={grouping.unitsPerGroup}
-                    onChange={(e) => updateGrouping(index, 'unitsPerGroup', parseInt(e.target.value) || 1)}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      updateGrouping(index, 'unitsPerGroup', value === '' ? '' : parseInt(value) || '');
+                    }}
                     disabled={updateItemTypeMutation.isPending}
                   />
                 </div>

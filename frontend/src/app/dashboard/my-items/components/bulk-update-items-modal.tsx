@@ -7,10 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/auth-context';
 import { ItemStatus, BulkUpdateItemsRequest, ItemType } from '@/types/api';
-import { itemsAPI } from '@/lib/api';
+import { useBulkUpdateItemsMutation } from '@/hooks/use-queries';
 import { toast } from 'sonner';
 
 interface BulkUpdateItemsModalProps {
@@ -39,7 +38,6 @@ export function BulkUpdateItemsModal({
   onItemTypeSelect 
 }: BulkUpdateItemsModalProps) {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   
   const [bulkForm, setBulkForm] = useState<BulkForm>({
     currentStatus: ItemStatus.WITH_EMPLOYEE,
@@ -55,29 +53,8 @@ export function BulkUpdateItemsModal({
   const selectedItemTypeData = itemTypes.find(type => type._id === selectedItemType);
   const availableGroupings = selectedItemTypeData?.grouping || [];
 
-  // Bulk update mutation
-  const bulkUpdateMutation = useMutation({
-    mutationFn: (data: BulkUpdateItemsRequest) => itemsAPI.bulkUpdateItems(data),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ['myItemsSummary'] });
-      onClose();
-      setBulkForm({
-        currentStatus: ItemStatus.WITH_EMPLOYEE,
-        newStatus: ItemStatus.SOLD,
-        useGrouping: false,
-        quantity: '1',
-        groupQuantity: '1',
-        groupName: '',
-            notes: ''
-      });
-      const itemsUpdated = response.data.data?.itemsUpdated || 0;
-      toast.success(`${itemsUpdated} items updated successfully`);
-    },
-    onError: (error: unknown) => {
-      const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update items';
-      toast.error(errorMessage);
-    },
-  });
+  // Bulk update mutation using optimized hook
+  const bulkUpdateMutation = useBulkUpdateItemsMutation();
 
   const handleBulkUpdate = () => {
     if (!selectedItemType) {
@@ -109,7 +86,26 @@ export function BulkUpdateItemsModal({
       updateData.notes = bulkForm.notes;
     }
 
-    bulkUpdateMutation.mutate(updateData);
+    bulkUpdateMutation.mutate(updateData, {
+      onSuccess: (response) => {
+        onClose();
+        setBulkForm({
+          currentStatus: ItemStatus.WITH_EMPLOYEE,
+          newStatus: ItemStatus.SOLD,
+          useGrouping: false,
+          quantity: '1',
+          groupQuantity: '1',
+          groupName: '',
+          notes: ''
+        });
+        const itemsUpdated = response.data.data?.itemsUpdated || 0;
+        toast.success(`${itemsUpdated} items updated successfully`);
+      },
+      onError: (error: unknown) => {
+        const errorMessage = (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to update items';
+        toast.error(errorMessage);
+      },
+    });
   };
 
   const handleClose = () => {
