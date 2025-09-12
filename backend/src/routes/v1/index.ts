@@ -5,6 +5,7 @@ import itemRoutes from './item';
 import itemTypeRoutes from './itemType';
 import routeRoutes from './route';
 import customerRoutes from './customer';
+import analyticsRoutes from './analytics';
 
 const router = express.Router();
 
@@ -47,5 +48,8 @@ router.use('/routes', routeRoutes);
 
 // Customer routes
 router.use('/customers', customerRoutes);
+
+// Analytics routes
+router.use('/analytics', analyticsRoutes);
 
 export default router;
