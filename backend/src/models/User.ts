@@ -125,6 +125,14 @@ userSchema.methods.getDefaultPermissions = function(): Permission[] {
         Permission.READ_INVENTORY,
         Permission.UPDATE_INVENTORY,
         Permission.DELETE_INVENTORY,
+        Permission.CREATE_ROUTES,
+        Permission.READ_ROUTES,
+        Permission.UPDATE_ROUTES,
+        Permission.DELETE_ROUTES,
+        Permission.CREATE_CUSTOMERS,
+        Permission.READ_CUSTOMERS,
+        Permission.UPDATE_CUSTOMERS,
+        Permission.DELETE_CUSTOMERS,
         Permission.VIEW_REPORTS,
         Permission.EXPORT_DATA,
       ];
@@ -133,6 +141,11 @@ userSchema.methods.getDefaultPermissions = function(): Permission[] {
       return [
         Permission.READ_INVENTORY,
         Permission.UPDATE_INVENTORY,
+        Permission.READ_ROUTES,
+        Permission.CREATE_CUSTOMERS,
+        Permission.READ_CUSTOMERS,
+        Permission.UPDATE_CUSTOMERS,
+        Permission.DELETE_CUSTOMERS,
         Permission.VIEW_REPORTS,
       ];
     

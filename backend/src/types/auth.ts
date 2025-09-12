@@ -23,6 +23,18 @@ export enum Permission {
   UPDATE_INVENTORY = 'update_inventory',
   DELETE_INVENTORY = 'delete_inventory',
   
+  // Route Management
+  CREATE_ROUTES = 'create_routes',
+  READ_ROUTES = 'read_routes',
+  UPDATE_ROUTES = 'update_routes',
+  DELETE_ROUTES = 'delete_routes',
+  
+  // Customer Management
+  CREATE_CUSTOMERS = 'create_customers',
+  READ_CUSTOMERS = 'read_customers',
+  UPDATE_CUSTOMERS = 'update_customers',
+  DELETE_CUSTOMERS = 'delete_customers',
+  
   // Reports
   VIEW_REPORTS = 'view_reports',
   EXPORT_DATA = 'export_data'

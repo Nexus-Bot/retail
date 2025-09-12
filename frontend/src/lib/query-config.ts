@@ -55,6 +55,16 @@ export const queryKeys = {
   agencies: () => ['agencies'],
   agency: (id: string) => ['agency', id],
 
+  // Routes
+  routes: (agencyId?: string, filters?: Record<string, any>) =>
+    ['routes', agencyId, filters].filter(Boolean),
+  route: (id: string) => ['route', id],
+
+  // Customers
+  customers: (agencyId?: string, filters?: Record<string, any>) =>
+    ['customers', agencyId, filters].filter(Boolean),
+  customer: (id: string) => ['customer', id],
+
   // Dashboard data
   dashboard: (type: 'owner' | 'employee' | 'master', agencyId?: string, userId?: string) =>
     ['dashboard', type, agencyId, userId].filter(Boolean),
@@ -111,4 +121,10 @@ export const invalidationPatterns = {
   
   // When agencies are created/updated/deleted
   agencies: ['agencies', 'users', 'dashboard'],
+
+  // When routes are created/updated/deleted
+  routes: ['routes', 'customers', 'dashboard'],
+  
+  // When customers are created/updated/deleted
+  customers: ['customers', 'dashboard'],
 } as const;

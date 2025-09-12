@@ -3,6 +3,8 @@ import authRoutes from './auth';
 import agencyRoutes from './agency';
 import itemRoutes from './item';
 import itemTypeRoutes from './itemType';
+import routeRoutes from './route';
+import customerRoutes from './customer';
 
 const router = express.Router();
 
@@ -39,5 +41,11 @@ router.use('/item-type', itemTypeRoutes);
 
 // Item routes
 router.use('/item', itemRoutes);
+
+// Route routes
+router.use('/routes', routeRoutes);
+
+// Customer routes
+router.use('/customers', customerRoutes);
 
 export default router;

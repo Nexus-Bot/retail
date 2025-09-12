@@ -35,12 +35,27 @@ import {
   CreateItemsResponse,
   UpdateItemResponse,
   BulkUpdateItemsResponse,
-  ItemHistoryResponse,
   HealthResponse,
   TestResponse,
   TestPermissionsResponse,
   MasterOnlyResponse,
   OwnerOnlyResponse,
+  // Routes
+  CreateRouteRequest,
+  UpdateRouteRequest,
+  GetRoutesQuery,
+  RoutesResponse,
+  RouteResponse,
+  CreateRouteResponse,
+  UpdateRouteResponse,
+  // Customers
+  CreateCustomerRequest,
+  UpdateCustomerRequest,
+  GetCustomersQuery,
+  CustomersResponse,
+  CustomerResponse,
+  CreateCustomerResponse,
+  UpdateCustomerResponse,
 } from "@/types/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -125,9 +140,6 @@ export const itemsAPI = {
 
   getItem: (id: string) => api.get<ItemResponse>(`/item/${id}`),
 
-  getItemHistory: (id: string) =>
-    api.get<ItemHistoryResponse>(`/item/${id}/history`),
-
   updateItem: (id: string, data: UpdateItemRequest) =>
     api.put<UpdateItemResponse>(`/item/${id}`, data),
 };
@@ -176,6 +188,38 @@ export const itemTypesAPI = {
 
   updateItemType: (id: string, data: UpdateItemTypeRequest) =>
     api.put<UpdateItemTypeResponse>(`/item-type/${id}`, data),
+};
+
+// Routes API
+export const routesAPI = {
+  createRoute: (data: CreateRouteRequest) =>
+    api.post<CreateRouteResponse>("/routes", data),
+
+  getRoutes: (params?: GetRoutesQuery) =>
+    api.get<RoutesResponse>("/routes", { params }),
+
+  getRoute: (id: string) => api.get<RouteResponse>(`/routes/${id}`),
+
+  updateRoute: (id: string, data: UpdateRouteRequest) =>
+    api.put<UpdateRouteResponse>(`/routes/${id}`, data),
+
+  deleteRoute: (id: string) => api.delete(`/routes/${id}`),
+};
+
+// Customers API
+export const customersAPI = {
+  createCustomer: (data: CreateCustomerRequest) =>
+    api.post<CreateCustomerResponse>("/customers", data),
+
+  getCustomers: (params?: GetCustomersQuery) =>
+    api.get<CustomersResponse>("/customers", { params }),
+
+  getCustomer: (id: string) => api.get<CustomerResponse>(`/customers/${id}`),
+
+  updateCustomer: (id: string, data: UpdateCustomerRequest) =>
+    api.put<UpdateCustomerResponse>(`/customers/${id}`, data),
+
+  deleteCustomer: (id: string) => api.delete(`/customers/${id}`),
 };
 
 export default api;

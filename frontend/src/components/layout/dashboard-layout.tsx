@@ -29,6 +29,8 @@ import {
   Menu,
   ShoppingBag,
   BarChart3,
+  Route,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +64,8 @@ const getNavigationForRole = (role: string): NavItem[] => {
       ...baseNavigation,
       { name: "Items", href: "/dashboard/items", icon: Package },
       { name: "Item Types", href: "/dashboard/item-types", icon: Package },
+      { name: "Routes", href: "/dashboard/routes", icon: Route },
+      { name: "Customers", href: "/dashboard/customers", icon: UserCheck },
       { name: "Employees", href: "/dashboard/employees", icon: Users },
       { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -72,6 +76,7 @@ const getNavigationForRole = (role: string): NavItem[] => {
     return [
       ...baseNavigation,
       { name: "My Items", href: "/dashboard/my-items", icon: ShoppingBag },
+      { name: "Customers", href: "/dashboard/customers", icon: UserCheck },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];
   }

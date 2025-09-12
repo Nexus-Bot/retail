@@ -18,6 +18,18 @@ export enum Permission {
   UPDATE_AGENCIES = "update_agencies",
   DELETE_AGENCIES = "delete_agencies",
 
+  // Route Management
+  CREATE_ROUTES = "create_routes",
+  READ_ROUTES = "read_routes",
+  UPDATE_ROUTES = "update_routes",
+  DELETE_ROUTES = "delete_routes",
+
+  // Customer Management
+  CREATE_CUSTOMERS = "create_customers",
+  READ_CUSTOMERS = "read_customers",
+  UPDATE_CUSTOMERS = "update_customers",
+  DELETE_CUSTOMERS = "delete_customers",
+
   // Inventory Management
   CREATE_INVENTORY = "create_inventory",
   READ_INVENTORY = "read_inventory",
@@ -237,23 +249,13 @@ export interface GetItemTypesQuery {
   isActive?: boolean;
 }
 
-// Item Types
-export interface StatusHistory {
-  status: ItemStatus;
-  changedBy: string;
-  changedAt: string;
-  currentHolder?: string;
-  notes?: string;
-}
-
 export interface Item {
   _id: string;
   itemType: ItemType | string;
   agency: Agency | string;
   status: ItemStatus;
   currentHolder?: User | string;
-  statusHistory: StatusHistory[];
-  notes?: string;
+  sellPrice?: number;
   createdBy: User | string;
   createdAt: string;
   updatedAt: string;
@@ -269,6 +271,7 @@ export interface CreateItemsRequest {
 export interface UpdateItemRequest {
   status?: ItemStatus;
   currentHolder?: string;
+  sellPrice?: number;
   notes?: string;
 }
 
@@ -276,6 +279,7 @@ export interface BulkUpdateItemsRequest {
   itemTypeId: string;
   status?: ItemStatus;
   currentHolder?: string;
+  sellPrice?: number;
   notes?: string;
   quantity?: number;
   groupQuantity?: number;
@@ -288,6 +292,76 @@ export interface GetItemsQuery {
   limit?: number;
   status?: ItemStatus;
   itemTypeId?: string;
+}
+
+// Route Types
+export interface Route {
+  _id: string;
+  name: string;
+  agency: Agency | string;
+  createdBy:
+    | {
+        _id: string;
+        username: string;
+      }
+    | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRouteRequest {
+  name: string;
+}
+
+export interface UpdateRouteRequest {
+  name: string;
+}
+
+export interface GetRoutesQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+// Customer Types
+export interface Customer {
+  _id: string;
+  name: string;
+  mobile: string;
+  route:
+    | {
+        _id: string;
+        name: string;
+      }
+    | string;
+  agency: Agency | string;
+  createdBy:
+    | {
+        _id: string;
+        username: string;
+      }
+    | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerRequest {
+  name: string;
+  mobile: string;
+  routeId: string;
+}
+
+export interface UpdateCustomerRequest {
+  name: string;
+  mobile: string;
+  routeId: string;
+}
+
+export interface GetCustomersQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  routeId?: string;
 }
 
 // API Response Types
@@ -304,6 +378,16 @@ export type ItemTypesResponse = PaginatedApiResponse<ItemType>;
 export type ItemTypeResponse = BaseApiResponse<ItemType>;
 export type CreateItemTypeResponse = BaseApiResponse<ItemType>;
 export type UpdateItemTypeResponse = BaseApiResponse<ItemType>;
+
+export type RoutesResponse = PaginatedApiResponse<Route>;
+export type RouteResponse = BaseApiResponse<Route>;
+export type CreateRouteResponse = BaseApiResponse<Route>;
+export type UpdateRouteResponse = BaseApiResponse<Route>;
+
+export type CustomersResponse = PaginatedApiResponse<Customer>;
+export type CustomerResponse = BaseApiResponse<Customer>;
+export type CreateCustomerResponse = BaseApiResponse<Customer>;
+export type UpdateCustomerResponse = BaseApiResponse<Customer>;
 
 // Item Summary Types
 export interface ItemStatusCount {
@@ -333,7 +417,6 @@ export interface BulkUpdateItemsData {
   items: Item[];
 }
 export type BulkUpdateItemsResponse = BaseApiResponse<BulkUpdateItemsData>;
-export type ItemHistoryResponse = BaseApiResponse<StatusHistory[]>;
 
 // Test Route Response
 export interface TestPermissionsResponse {

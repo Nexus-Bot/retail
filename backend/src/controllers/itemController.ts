@@ -3,89 +3,12 @@ import mongoose from "mongoose";
 import Item, { ItemStatus } from "../models/Item";
 import ItemType from "../models/ItemType";
 import User from "../models/User";
+import { Customer } from "../models/Customer";
 import { UserRole } from "../types/auth";
-
-interface UpdateItemOptions {
-  status?: ItemStatus;
-  currentHolder?: string;
-}
-
-const updateSingleItem = async (
-  item: any,
-  updateOptions: UpdateItemOptions,
-  currentUser: any
-) => {
-  const { status, currentHolder } = updateOptions;
-
-  // Validate status if provided
-  if (status !== undefined) {
-    if (!Object.values(ItemStatus).includes(status)) {
-      throw new Error("Invalid status");
-    }
-
-    // Business logic for status transitions
-    if (item.status === ItemStatus.SOLD) {
-      // Employees can only change SOLD to WITH_EMPLOYEE
-      if (currentUser?.role === UserRole.EMPLOYEE) {
-        if (status !== ItemStatus.WITH_EMPLOYEE) {
-          throw new Error(
-            "Employees can only change sold items to with_employee status"
-          );
-        }
-      }
-
-      // Prevent redundant status update
-      if (status === ItemStatus.SOLD) {
-        throw new Error("Item is already sold");
-      }
-    }
-
-    // If assigning to employee, validate the employee exists and belongs to same agency
-    if (status === ItemStatus.WITH_EMPLOYEE) {
-      if (!currentHolder) {
-        throw new Error(
-          "Employee ID is required when assigning item to employee"
-        );
-      }
-
-      const employee = await User.findById(currentHolder);
-      if (!employee || employee.role !== UserRole.EMPLOYEE) {
-        throw new Error("Invalid employee");
-      }
-
-      if (employee.agency?.toString() !== item.agency.toString()) {
-        throw new Error("Employee must belong to the same agency");
-      }
-    }
-
-  }
-
-
-  // Handle status change
-  if (status !== undefined) {
-    item.status = status;
-    
-    // Set currentHolder based on status
-    if (status === ItemStatus.WITH_EMPLOYEE) {
-      item.currentHolder = currentHolder;
-    } else if (status === ItemStatus.IN_INVENTORY) {
-      item.currentHolder = undefined;
-    }
-    // For SOLD status, preserve the existing currentHolder
-  }
-
-  await item.save();
-  return item;
-};
 
 export const createItems = async (req: Request, res: Response) => {
   try {
-    const {
-      itemTypeId,
-      quantity,
-      groupQuantity,
-      groupName,
-    } = req.body;
+    const { itemTypeId, quantity, groupQuantity, groupName } = req.body;
     const currentUser = req.user;
 
     if (!itemTypeId) {
@@ -94,7 +17,6 @@ export const createItems = async (req: Request, res: Response) => {
         message: "Item type is required",
       });
     }
-
 
     // Only owners can create items
     if (currentUser?.role !== UserRole.OWNER) {
@@ -200,7 +122,8 @@ export const getItems = async (req: Request, res: Response) => {
     }
 
     if (status) filter.status = status;
-    if (itemTypeId) filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+    if (itemTypeId)
+      filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -219,8 +142,10 @@ export const getItems = async (req: Request, res: Response) => {
                 localField: "itemType",
                 foreignField: "_id",
                 as: "itemType",
-                pipeline: [{ $project: { name: 1, grouping: 1, description: 1 } }]
-              }
+                pipeline: [
+                  { $project: { name: 1, grouping: 1, description: 1 } },
+                ],
+              },
             },
             {
               $lookup: {
@@ -228,8 +153,8 @@ export const getItems = async (req: Request, res: Response) => {
                 localField: "agency",
                 foreignField: "_id",
                 as: "agency",
-                pipeline: [{ $project: { name: 1 } }]
-              }
+                pipeline: [{ $project: { name: 1 } }],
+              },
             },
             {
               $lookup: {
@@ -237,8 +162,8 @@ export const getItems = async (req: Request, res: Response) => {
                 localField: "createdBy",
                 foreignField: "_id",
                 as: "createdBy",
-                pipeline: [{ $project: { username: 1 } }]
-              }
+                pipeline: [{ $project: { username: 1 } }],
+              },
             },
             {
               $lookup: {
@@ -246,21 +171,31 @@ export const getItems = async (req: Request, res: Response) => {
                 localField: "currentHolder",
                 foreignField: "_id",
                 as: "currentHolder",
-                pipeline: [{ $project: { username: 1 } }]
-              }
+                pipeline: [{ $project: { username: 1 } }],
+              },
+            },
+            {
+              $lookup: {
+                from: "customers",
+                localField: "saleTo",
+                foreignField: "_id",
+                as: "saleTo",
+                pipeline: [{ $project: { name: 1, mobile: 1 } }],
+              },
             },
             {
               $addFields: {
                 itemType: { $arrayElemAt: ["$itemType", 0] },
                 agency: { $arrayElemAt: ["$agency", 0] },
                 createdBy: { $arrayElemAt: ["$createdBy", 0] },
-                currentHolder: { $arrayElemAt: ["$currentHolder", 0] }
-              }
-            }
+                currentHolder: { $arrayElemAt: ["$currentHolder", 0] },
+                saleTo: { $arrayElemAt: ["$saleTo", 0] },
+              },
+            },
           ],
-          count: [{ $count: "total" }]
-        }
-      }
+          count: [{ $count: "total" }],
+        },
+      },
     ]);
 
     const items = results[0].data;
@@ -268,7 +203,7 @@ export const getItems = async (req: Request, res: Response) => {
 
     // Get summary by item type - use separate filter for summary (exclude limit-related filters)
     const summaryFilter: any = {};
-    
+
     // Role-based filtering for summary
     if (
       currentUser?.role === UserRole.OWNER ||
@@ -279,7 +214,10 @@ export const getItems = async (req: Request, res: Response) => {
 
     // Only include status and itemType filters for summary, not pagination
     if (status) summaryFilter.status = status;
-    if (itemTypeId) summaryFilter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+    if (itemTypeId)
+      summaryFilter.itemType = new mongoose.Types.ObjectId(
+        itemTypeId as string
+      );
 
     const summary = await Item.aggregate([
       { $match: summaryFilter },
@@ -341,7 +279,8 @@ export const getItem = async (req: Request, res: Response) => {
       .populate("itemType", "name grouping description")
       .populate("agency", "name")
       .populate("createdBy", "username")
-      .populate("currentHolder", "username");
+      .populate("currentHolder", "username")
+      .populate("saleTo", "name mobile");
 
     if (!item) {
       return res.status(404).json({
@@ -380,6 +319,8 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       itemTypeId,
       status,
       currentHolder,
+      sellPrice,
+      saleTo,
       quantity,
       groupQuantity,
       groupName,
@@ -387,10 +328,25 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
     } = req.body;
     const currentUser = req.user;
 
+    // === REQUIRED FIELD VALIDATION ===
     if (!itemTypeId) {
       return res.status(400).json({
         success: false,
         message: "Item type ID is required",
+      });
+    }
+
+    if (!currentStatus) {
+      return res.status(400).json({
+        success: false,
+        message: "Current status is required to validate transitions",
+      });
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Target status is required",
       });
     }
 
@@ -420,16 +376,15 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
     const filter: any = {
       itemType: itemTypeId,
       agency: currentUser?.agencyId,
+      status: currentStatus, // Required field, no conditional needed
     };
 
-    // Filter by current status if provided
-    if (currentStatus) {
-      filter.status = currentStatus;
-    }
-
-    // Employee access control
+    // Employee access control - Special case for returns (sold -> with_employee)
     if (currentUser?.role === UserRole.EMPLOYEE) {
-      filter.currentHolder = currentUser.id;
+      // For returns, any employee can process sold items, bypass currentHolder restriction
+      if (!(currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE)) {
+        filter.currentHolder = currentUser.id;
+      }
     }
 
     // Find items to update
@@ -451,51 +406,156 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
 
     // Validate business rules before bulk update
     const updateData: any = {};
-    if (status) {
-      // Validate status transitions for all items
-      for (const item of itemsFound) {
-        if (item.status === ItemStatus.SOLD) {
-          if (currentUser?.role === UserRole.EMPLOYEE && status !== ItemStatus.WITH_EMPLOYEE) {
-            return res.status(400).json({
-              success: false,
-              message: "Employees can only change sold items to with_employee status",
-            });
-          }
-          if (status === ItemStatus.SOLD) {
-            return res.status(400).json({
-              success: false,
-              message: "Item is already sold",
-            });
-          }
-        }
-      }
-      updateData.status = status;
-    }
 
-    if (currentHolder) {
-      if (status === ItemStatus.WITH_EMPLOYEE) {
-        // Validate employee exists and belongs to same agency
-        const employee = await User.findById(currentHolder);
-        if (!employee) {
-          return res.status(404).json({
-            success: false,
-            message: "Employee not found",
-          });
-        }
-        if (employee.agency?.toString() !== currentUser?.agencyId) {
-          return res.status(400).json({
-            success: false,
-            message: "Employee not in your agency",
-          });
-        }
+
+    // === BUSINESS LOGIC VALIDATION BY TRANSITION ===
+    
+    // 1. IN_INVENTORY -> WITH_EMPLOYEE (Assign to Employee)
+    if (currentStatus === ItemStatus.IN_INVENTORY && status === ItemStatus.WITH_EMPLOYEE) {
+      // Validate required fields
+      if (!currentHolder) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee ID (currentHolder) is required when assigning items to employee",
+        });
       }
-      updateData.currentHolder = status === ItemStatus.WITH_EMPLOYEE ? currentHolder : null;
+      
+      // Validate employee exists and belongs to same agency
+      const employee = await User.findById(currentHolder);
+      if (!employee || employee.role !== UserRole.EMPLOYEE) {
+        return res.status(404).json({
+          success: false,
+          message: "Valid employee not found",
+        });
+      }
+      if (employee.agency?.toString() !== currentUser?.agencyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee must be from your agency",
+        });
+      }
+      
+      // Block unrelated fields for this transition
+      if (saleTo !== undefined || sellPrice !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "saleTo and sellPrice are not allowed for assignment transitions",
+        });
+      }
+      
+      // Set update data
+      updateData.status = status;
+      updateData.currentHolder = currentHolder;
+    }
+    
+    // 2. WITH_EMPLOYEE -> SOLD (Sale Transaction)  
+    else if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.SOLD) {
+      // Validate required fields
+      if (!saleTo) {
+        return res.status(400).json({
+          success: false,
+          message: "Customer ID (saleTo) is required for sale transactions",
+        });
+      }
+      if (sellPrice === undefined || sellPrice === null) {
+        return res.status(400).json({
+          success: false,
+          message: "Sell price is required for sale transactions",
+        });
+      }
+      
+      // Validate sellPrice
+      if (typeof sellPrice !== "number" || sellPrice < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Sell price must be a positive number",
+        });
+      }
+      
+      // Validate customer exists and belongs to same agency
+      const customer = await Customer.findById(saleTo);
+      if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid customer or customer not from your agency",
+        });
+      }
+      
+      // Block unrelated fields for this transition
+      if (currentHolder !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "currentHolder is not allowed for sale transactions (currentHolder preserved during sale)",
+        });
+      }
+      
+      // Set update data with analytics
+      updateData.status = status;
+      updateData.sellPrice = sellPrice;
+      updateData.saleTo = saleTo;
+      updateData.saleDate = new Date();
+      updateData.returnDate = null; // Clear return date
+    }
+    
+    // 3. SOLD -> WITH_EMPLOYEE (Return Processing)
+    else if (currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE) {
+      // Validate required fields
+      if (!currentHolder) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee ID (currentHolder) is required to process returns",
+        });
+      }
+      
+      // Validate employee exists and belongs to same agency (any employee can process returns)
+      const employee = await User.findById(currentHolder);
+      if (!employee || employee.role !== UserRole.EMPLOYEE) {
+        return res.status(404).json({
+          success: false,
+          message: "Valid employee not found",
+        });
+      }
+      if (employee.agency?.toString() !== currentUser?.agencyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee must be from your agency",
+        });
+      }
+      
+      // Block unrelated fields for this transition
+      if (saleTo !== undefined || sellPrice !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "saleTo and sellPrice are not allowed for return processing",
+        });
+      }
+      
+      // Set update data with analytics
+      updateData.status = status;
+      updateData.currentHolder = currentHolder;
+      updateData.returnDate = new Date();
+    }
+    
+    // Block invalid transitions
+    else if (currentStatus !== status) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid transition from ${currentStatus} to ${status}`,
+      });
+    }
+    
+    // Block redundant updates (same status)
+    else {
+      return res.status(400).json({
+        success: false,
+        message: `Items are already in ${status} status`,
+      });
     }
 
     updateData.updatedAt = new Date();
 
     // Perform bulk update - single database operation
-    const itemIds = itemsFound.map(item => item._id);
+    const itemIds = itemsFound.map((item) => item._id);
     const bulkUpdateResult = await Item.updateMany(
       { _id: { $in: itemIds } },
       { $set: updateData }
@@ -516,6 +576,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       .populate("agency", "name")
       .populate("createdBy", "username")
       .populate("currentHolder", "username")
+      .populate("saleTo", "name mobile")
       .limit(5); // Limit response size for large bulk operations
 
     return res.json({
@@ -529,83 +590,6 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Bulk update items error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
-};
-
-export const updateItem = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { status, currentHolder } = req.body;
-    const currentUser = req.user;
-
-    const item = await Item.findById(id).populate("itemType");
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: "Item not found",
-      });
-    }
-
-    // Role-based access control
-    if (
-      currentUser?.role !== UserRole.MASTER &&
-      item.agency.toString() !== currentUser?.agencyId
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied",
-      });
-    }
-
-    // Business rule: Only the current holder or owner can modify items
-    if (currentUser?.role === UserRole.EMPLOYEE) {
-      if (item.currentHolder?.toString() !== currentUser.id) {
-        return res.status(403).json({
-          success: false,
-          message: "Employees can only modify items they currently hold",
-        });
-      }
-
-    }
-
-    // Use the utility function to update the item
-    await updateSingleItem(
-      item,
-      { status, currentHolder },
-      currentUser
-    );
-
-    await item.populate("itemType", "name grouping description");
-    await item.populate("agency", "name");
-    await item.populate("createdBy", "username");
-    await item.populate("currentHolder", "username");
-
-    return res.json({
-      success: true,
-      message: "Item updated successfully",
-      data: item,
-    });
-  } catch (error: any) {
-    if (error.code === 11000) {
-      return res.status(400).json({
-        success: false,
-        message: "Serial number already exists in your agency",
-      });
-    }
-
-    // Handle custom errors from utility function
-    if (error.message) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    console.error("Update item error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -630,7 +614,8 @@ export const getMyItems = async (req: Request, res: Response) => {
     };
 
     if (status) filter.status = status;
-    if (itemTypeId) filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+    if (itemTypeId)
+      filter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -649,8 +634,10 @@ export const getMyItems = async (req: Request, res: Response) => {
                 localField: "itemType",
                 foreignField: "_id",
                 as: "itemType",
-                pipeline: [{ $project: { name: 1, grouping: 1, description: 1 } }]
-              }
+                pipeline: [
+                  { $project: { name: 1, grouping: 1, description: 1 } },
+                ],
+              },
             },
             {
               $lookup: {
@@ -658,8 +645,8 @@ export const getMyItems = async (req: Request, res: Response) => {
                 localField: "agency",
                 foreignField: "_id",
                 as: "agency",
-                pipeline: [{ $project: { name: 1 } }]
-              }
+                pipeline: [{ $project: { name: 1 } }],
+              },
             },
             {
               $lookup: {
@@ -667,8 +654,8 @@ export const getMyItems = async (req: Request, res: Response) => {
                 localField: "createdBy",
                 foreignField: "_id",
                 as: "createdBy",
-                pipeline: [{ $project: { username: 1 } }]
-              }
+                pipeline: [{ $project: { username: 1 } }],
+              },
             },
             {
               $lookup: {
@@ -676,21 +663,31 @@ export const getMyItems = async (req: Request, res: Response) => {
                 localField: "currentHolder",
                 foreignField: "_id",
                 as: "currentHolder",
-                pipeline: [{ $project: { username: 1 } }]
-              }
+                pipeline: [{ $project: { username: 1 } }],
+              },
+            },
+            {
+              $lookup: {
+                from: "customers",
+                localField: "saleTo",
+                foreignField: "_id",
+                as: "saleTo",
+                pipeline: [{ $project: { name: 1, mobile: 1 } }],
+              },
             },
             {
               $addFields: {
                 itemType: { $arrayElemAt: ["$itemType", 0] },
                 agency: { $arrayElemAt: ["$agency", 0] },
                 createdBy: { $arrayElemAt: ["$createdBy", 0] },
-                currentHolder: { $arrayElemAt: ["$currentHolder", 0] }
-              }
-            }
+                currentHolder: { $arrayElemAt: ["$currentHolder", 0] },
+                saleTo: { $arrayElemAt: ["$saleTo", 0] },
+              },
+            },
           ],
-          count: [{ $count: "total" }]
-        }
-      }
+          count: [{ $count: "total" }],
+        },
+      },
     ]);
 
     const items = results[0].data;
@@ -701,10 +698,13 @@ export const getMyItems = async (req: Request, res: Response) => {
     const agencySummaryFilter: any = {
       agency: new mongoose.Types.ObjectId(currentUser.agencyId),
     };
-    
+
     // Include status and itemType filters for summary
     if (status) agencySummaryFilter.status = status;
-    if (itemTypeId) agencySummaryFilter.itemType = new mongoose.Types.ObjectId(itemTypeId as string);
+    if (itemTypeId)
+      agencySummaryFilter.itemType = new mongoose.Types.ObjectId(
+        itemTypeId as string
+      );
 
     const summary = await Item.aggregate([
       { $match: agencySummaryFilter },
@@ -840,7 +840,9 @@ export const bulkDeleteItems = async (req: Request, res: Response) => {
     }
 
     // Business rule: Prevent deletion of sold items
-    const soldItems = itemsFound.filter(item => item.status === ItemStatus.SOLD);
+    const soldItems = itemsFound.filter(
+      (item) => item.status === ItemStatus.SOLD
+    );
     if (soldItems.length > 0) {
       return res.status(400).json({
         success: false,
@@ -849,7 +851,7 @@ export const bulkDeleteItems = async (req: Request, res: Response) => {
     }
 
     // Perform bulk delete on specific items found
-    const itemIds = itemsFound.map(item => item._id);
+    const itemIds = itemsFound.map((item) => item._id);
     const deleteResult = await Item.deleteMany({ _id: { $in: itemIds } });
 
     return res.json({
@@ -868,4 +870,3 @@ export const bulkDeleteItems = async (req: Request, res: Response) => {
     });
   }
 };
-

@@ -52,6 +52,7 @@ export function BulkOperationsModal({
     groupQuantity: '1',
     groupName: "",
     currentHolder: "",
+    sellPrice: "",
     notes: "",
   });
 
@@ -100,6 +101,13 @@ export function BulkOperationsModal({
       updateData.currentHolder = bulkForm.currentHolder;
     }
 
+    // Add sellPrice if provided
+    if (bulkForm.sellPrice && bulkForm.sellPrice.trim()) {
+      const sellPriceValue = parseFloat(bulkForm.sellPrice);
+      if (!isNaN(sellPriceValue) && sellPriceValue >= 0) {
+        updateData.sellPrice = sellPriceValue;
+      }
+    }
 
     if (bulkForm.notes) {
       updateData.notes = bulkForm.notes;
@@ -130,7 +138,8 @@ export function BulkOperationsModal({
       groupQuantity: '1',
       groupName: "",
       currentHolder: "",
-        notes: "",
+      sellPrice: "",
+      notes: "",
     });
     onClose();
   };
@@ -209,6 +218,23 @@ export function BulkOperationsModal({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Sell Price (Optional) */}
+          <div className="space-y-2">
+            <Label htmlFor="sellPrice">Sell Price (Optional)</Label>
+            <Input
+              id="sellPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Enter sell price..."
+              value={bulkForm.sellPrice}
+              onChange={(e) => setBulkForm({...bulkForm, sellPrice: e.target.value})}
+            />
+            <p className="text-xs text-gray-500">
+              Set the selling price for these items (leave empty to keep existing price)
+            </p>
           </div>
 
           {/* Quantity Selection */}

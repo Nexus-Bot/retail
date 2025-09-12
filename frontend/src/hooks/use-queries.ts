@@ -10,6 +10,8 @@ import {
   itemTypesAPI, 
   usersAPI, 
   agenciesAPI,
+  routesAPI,
+  customersAPI,
 } from '@/lib/api';
 import { 
   queryKeys, 
@@ -20,10 +22,16 @@ import {
 import type { 
   GetItemsQuery,
   GetUsersQuery,
+  GetRoutesQuery,
+  GetCustomersQuery,
   CreateItemsRequest,
   BulkUpdateItemsRequest,
   CreateUserRequest,
-  UpdateUserRequest
+  UpdateUserRequest,
+  CreateRouteRequest,
+  UpdateRouteRequest,
+  CreateCustomerRequest,
+  UpdateCustomerRequest
 } from '@/types/api';
 
 // Item Types Hooks
@@ -123,6 +131,48 @@ export const useAgencies = () => {
   });
 };
 
+// Routes Hooks
+export const useRoutes = (filters?: GetRoutesQuery & { enabled?: boolean }) => {
+  const { user } = useAuth();
+  const { limit = DEFAULT_LIMITS.MEDIUM, enabled = true, ...otherFilters } = filters || {};
+  
+  const queryOptions = createQueryOptions.dynamic(!!user?.agency?._id);
+  return useQuery({
+    queryKey: queryKeys.routes(user?.agency?._id, { limit, ...otherFilters }),
+    queryFn: () => routesAPI.getRoutes({ limit, ...otherFilters }),
+    ...queryOptions,
+    enabled: enabled && !!user?.agency?._id,
+  });
+};
+
+export const useRoute = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.route(id),
+    queryFn: () => routesAPI.getRoute(id),
+    ...createQueryOptions.static(!!id),
+  });
+};
+
+// Customers Hooks
+export const useCustomers = (filters?: GetCustomersQuery) => {
+  const { user } = useAuth();
+  const { limit = DEFAULT_LIMITS.MEDIUM, ...otherFilters } = filters || {};
+  
+  return useQuery({
+    queryKey: queryKeys.customers(user?.agency?._id, { limit, ...otherFilters }),
+    queryFn: () => customersAPI.getCustomers({ limit, ...otherFilters }),
+    ...createQueryOptions.dynamic(!!user?.agency?._id),
+  });
+};
+
+export const useCustomer = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.customer(id),
+    queryFn: () => customersAPI.getCustomer(id),
+    ...createQueryOptions.static(!!id),
+  });
+};
+
 // User/Employee Mutation Hooks with optimized invalidation
 export const useCreateUserMutation = () => {
   const queryClient = useQueryClient();
@@ -191,6 +241,94 @@ export const useBulkUpdateItemsMutation = () => {
     onSuccess: () => {
       // Invalidate related queries efficiently
       invalidationPatterns.items.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+    },
+  });
+};
+
+// Routes Mutation Hooks
+export const useCreateRouteMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: CreateRouteRequest) => routesAPI.createRoute(data),
+    onSuccess: () => {
+      invalidationPatterns.routes.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+    },
+  });
+};
+
+export const useUpdateRouteMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string, data: UpdateRouteRequest }) => 
+      routesAPI.updateRoute(id, data),
+    onSuccess: (_, variables) => {
+      invalidationPatterns.routes.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.route(variables.id) 
+      });
+    },
+  });
+};
+
+export const useDeleteRouteMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => routesAPI.deleteRoute(id),
+    onSuccess: () => {
+      invalidationPatterns.routes.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+    },
+  });
+};
+
+// Customers Mutation Hooks
+export const useCreateCustomerMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: CreateCustomerRequest) => customersAPI.createCustomer(data),
+    onSuccess: () => {
+      invalidationPatterns.customers.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+    },
+  });
+};
+
+export const useUpdateCustomerMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string, data: UpdateCustomerRequest }) => 
+      customersAPI.updateCustomer(id, data),
+    onSuccess: (_, variables) => {
+      invalidationPatterns.customers.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.customer(variables.id) 
+      });
+    },
+  });
+};
+
+export const useDeleteCustomerMutation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => customersAPI.deleteCustomer(id),
+    onSuccess: () => {
+      invalidationPatterns.customers.forEach(pattern => {
         queryClient.invalidateQueries({ queryKey: [pattern] });
       });
     },

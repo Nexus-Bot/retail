@@ -12,6 +12,10 @@ interface IItem extends mongoose.Document {
   status: ItemStatus;
   agency: mongoose.Types.ObjectId;
   currentHolder?: mongoose.Types.ObjectId; // Current holder if status is 'with_employee'
+  sellPrice?: number; // Optional sell price for the item
+  saleDate?: Date; // Date when item was sold
+  returnDate?: Date; // Date when item was returned (if applicable)
+  saleTo?: mongoose.Types.ObjectId; // Customer who bought the item
   createdBy: mongoose.Types.ObjectId;
 }
 
@@ -38,6 +42,24 @@ const itemSchema = new mongoose.Schema(
       ref: "User",
       required: false,
     },
+    sellPrice: {
+      type: Number,
+      required: false,
+      min: [0, "Sell price must be a positive number"],
+    },
+    saleDate: {
+      type: Date,
+      required: false,
+    },
+    returnDate: {
+      type: Date,
+      required: false,
+    },
+    saleTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: false,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -60,5 +82,8 @@ itemSchema.index({ createdAt: -1 });                     // Recent items sorting
 itemSchema.index({ status: 1, itemType: 1 });           // Status + type queries  
 itemSchema.index({ agency: 1, itemType: 1, status: 1 }); // Complex filtering
 itemSchema.index({ createdBy: 1 });
+itemSchema.index({ saleDate: -1, agency: 1 });          // Sales analytics by date
+itemSchema.index({ returnDate: -1, agency: 1 });        // Return analytics by date
+itemSchema.index({ saleTo: 1 });                         // Customer-based sales queries
 
 export default mongoose.model<IItem>("Item", itemSchema);
