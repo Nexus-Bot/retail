@@ -280,6 +280,7 @@ export interface BulkUpdateItemsRequest {
   status?: ItemStatus;
   currentHolder?: string;
   sellPrice?: number;
+  saleTo?: string; // Customer ID for sales
   notes?: string;
   quantity?: number;
   groupQuantity?: number;
