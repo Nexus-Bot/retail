@@ -153,102 +153,99 @@ function AllCustomersContent() {
       )}
 
       {/* Customers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Customers List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Actions</TableHead>
-                    <TableHead>Customer Name</TableHead>
-                    <TableHead>Mobile Number</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Created By</TableHead>
-                    <TableHead>Created Date</TableHead>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Customers List</h2>
+        
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <div className="rounded-md border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Actions</TableHead>
+                  <TableHead>Customer Name</TableHead>
+                  <TableHead>Mobile Number</TableHead>
+                  <TableHead>Route</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <TableHead>Created Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map((customer: ApiCustomer) => (
+                  <TableRow key={customer._id}>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedCustomer(customer);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {customer.name}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-gray-400" />
+                        {customer.mobile}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {customer.route && typeof customer.route === "object"
+                          ? customer.route.name
+                          : "No Route"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {customer.createdBy && typeof customer.createdBy === "object"
+                        ? customer.createdBy.username
+                        : "Unknown"}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(customer.createdAt).toLocaleDateString()}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomers.map((customer: ApiCustomer) => (
-                    <TableRow key={customer._id}>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setIsEditModalOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {customer.name}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3 text-gray-400" />
-                          {customer.mobile}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {customer.route && typeof customer.route === "object"
-                            ? customer.route.name
-                            : "No Route"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {customer.createdBy && typeof customer.createdBy === "object"
-                          ? customer.createdBy.username
-                          : "Unknown"}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(customer.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {filteredCustomers.length === 0 && !loading && (
-                <div className="text-center py-10">
-                  <Users className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No customers found
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm
-                      ? "Try adjusting your search terms."
-                      : "No customers have been added yet."}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {filteredCustomers.length === 0 && !loading && (
+              <div className="text-center py-10">
+                <Users className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No customers found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm
+                    ? "Try adjusting your search terms."
+                    : "No customers have been added yet."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       <CreateCustomerModal 

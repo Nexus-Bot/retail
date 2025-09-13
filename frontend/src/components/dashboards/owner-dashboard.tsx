@@ -3,58 +3,28 @@
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
-import { ItemStatus, User, UserRole } from "@/types/api";
-import { useOwnerDashboard, useItemsSummary } from "@/hooks/use-queries";
-import { Loader2, Package, TrendingUp, Users, BarChart3, Settings } from "lucide-react";
+import { User, UserRole } from "@/types/api";
+import { useOwnerDashboard } from "@/hooks/use-queries";
+import { Package, Users, BarChart3, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-interface OwnerStats {
-  totalItems: number;
-  itemsWithEmployees: number;
-  soldItems: number;
-  employees: number;
-}
 
 export function OwnerDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
   // Fetch dashboard data using optimized hooks
-  const { users: usersQuery, isLoading: isLoadingUsers } = useOwnerDashboard();
-  const { data: itemsSummaryData, isLoading: isLoadingSummary } = useItemsSummary();
+  const { users: usersQuery } = useOwnerDashboard();
   
   const usersData = usersQuery.data;
-  const summary = itemsSummaryData?.summary || [];
 
-  // Calculate stats from summary data (more efficient)
+  // Calculate employee count
   const users = usersData?.data?.data || [];
   const employees = users.filter((u: User) => u.role === UserRole.EMPLOYEE);
-
-  // Calculate item counts from summary data
-  const totalItems = summary.reduce((acc, itemType) => acc + itemType.totalCount, 0);
-  const itemsWithEmployees = summary.reduce((acc, itemType) => {
-    const withEmployeesCount = itemType.statusCounts.find(sc => sc.status === ItemStatus.WITH_EMPLOYEE)?.count || 0;
-    return acc + withEmployeesCount;
-  }, 0);
-  const soldItems = summary.reduce((acc, itemType) => {
-    const soldCount = itemType.statusCounts.find(sc => sc.status === ItemStatus.SOLD)?.count || 0;
-    return acc + soldCount;
-  }, 0);
-
-  const stats: OwnerStats = {
-    totalItems,
-    itemsWithEmployees,
-    soldItems,
-    employees: employees.length,
-  };
-
-  const isLoading = isLoadingUsers || isLoadingSummary;
 
   return (
     <div className="p-4 space-y-6">
@@ -73,76 +43,6 @@ export function OwnerDashboard() {
         </div>
       </div>
 
-      {/* Quick Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {stats?.totalItems?.toLocaleString() || "0"}
-                </div>
-                <p className="text-xs text-muted-foreground">In inventory</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              With Employees
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {stats?.itemsWithEmployees || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">Items assigned</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sold Items</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {stats?.soldItems || 0}
-                </div>
-                <p className="text-xs text-muted-foreground">Items sold</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Business Operations */}
       <div className="space-y-4">
@@ -186,7 +86,7 @@ export function OwnerDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Users className="mr-2 h-5 w-5" />
-                Employees ({stats?.employees || 0})
+                Employees ({employees.length})
               </CardTitle>
               <CardDescription>
                 Manage your team members. Add new employees, view performance, and assign items to employees.

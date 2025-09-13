@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { ShoppingBag, Loader2, Settings, BarChart3 } from "lucide-react";
+import { ShoppingBag, Settings, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMyItems } from "@/hooks/use-queries";
 import { ItemStatus } from "@/types/api";
@@ -22,7 +22,6 @@ export function EmployeeDashboard() {
 
   const {
     data: myItemsData,
-    isLoading: loading,
     error,
     refetch: refetchStats,
   } = useMyItems({
@@ -67,30 +66,6 @@ export function EmployeeDashboard() {
         </Card>
       )}
 
-      {/* Stats */}
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Items</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex items-center space-x-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading...</span>
-              </div>
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{myItemsCount}</div>
-                <p className="text-xs text-muted-foreground">
-                  Items currently in your care
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Employee Tools */}
       <div className="space-y-4">

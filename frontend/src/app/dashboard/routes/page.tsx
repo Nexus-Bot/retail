@@ -135,87 +135,84 @@ function AllRoutesContent() {
       )}
 
       {/* Routes Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Routes List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Actions</TableHead>
-                    <TableHead>Route Name</TableHead>
-                    <TableHead>Created By</TableHead>
-                    <TableHead>Created Date</TableHead>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Routes List</h2>
+        
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <div className="rounded-md border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Actions</TableHead>
+                  <TableHead>Route Name</TableHead>
+                  <TableHead>Created By</TableHead>
+                  <TableHead>Created Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRoutes.map((route: ApiRoute) => (
+                  <TableRow key={route._id}>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRoute(route);
+                            setIsEditModalOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRoute(route);
+                            setIsDeleteModalOpen(true);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {route.name}
+                    </TableCell>
+                    <TableCell>
+                      {route.createdBy && typeof route.createdBy === "object"
+                        ? route.createdBy.username
+                        : "Unknown"}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(route.createdAt).toLocaleDateString()}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRoutes.map((route: ApiRoute) => (
-                    <TableRow key={route._id}>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRoute(route);
-                              setIsEditModalOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => {
-                              setSelectedRoute(route);
-                              setIsDeleteModalOpen(true);
-                            }}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {route.name}
-                      </TableCell>
-                      <TableCell>
-                        {route.createdBy && typeof route.createdBy === "object"
-                          ? route.createdBy.username
-                          : "Unknown"}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(route.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              
-              {filteredRoutes.length === 0 && !loading && (
-                <div className="text-center py-10">
-                  <Route className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No routes found
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {searchTerm
-                      ? "Try adjusting your search terms."
-                      : "No routes have been created yet."}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+            
+            {filteredRoutes.length === 0 && !loading && (
+              <div className="text-center py-10">
+                <Route className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No routes found
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  {searchTerm
+                    ? "Try adjusting your search terms."
+                    : "No routes have been created yet."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       <CreateRouteModal 

@@ -715,21 +715,37 @@ export const getMyItems = async (req: Request, res: Response) => {
     const items = results[0].data;
     const total = results[0].count[0]?.total || 0;
 
-    // Get comprehensive summary including employee items AND agency inventory
-    // This helps employees see both their items and available inventory per item type
-    const agencySummaryFilter: any = {
-      agency: new mongoose.Types.ObjectId(currentUser.agencyId),
-    };
-
-    // Include status and itemType filters for summary
-    if (status) agencySummaryFilter.status = status;
-    if (itemTypeId)
-      agencySummaryFilter.itemType = new mongoose.Types.ObjectId(
-        itemTypeId as string
-      );
-
+    // Get employee-specific summary that respects currentHolder for WITH_EMPLOYEE and SOLD items
+    // Only show items the employee has access to based on currentHolder
     const summary = await Item.aggregate([
-      { $match: agencySummaryFilter },
+      {
+        $match: {
+          agency: new mongoose.Types.ObjectId(currentUser.agencyId),
+          ...(status && { status }),
+          ...(itemTypeId && { itemType: new mongoose.Types.ObjectId(itemTypeId as string) }),
+        }
+      },
+      {
+        $addFields: {
+          // Apply currentHolder filter only for WITH_EMPLOYEE and SOLD statuses
+          isEmployeeAccessible: {
+            $cond: {
+              if: { 
+                $in: ["$status", [ItemStatus.WITH_EMPLOYEE, ItemStatus.SOLD]] 
+              },
+              then: { 
+                $eq: ["$currentHolder", new mongoose.Types.ObjectId(currentUser.id)] 
+              },
+              else: true // IN_INVENTORY items are visible to all employees in the agency
+            }
+          }
+        }
+      },
+      {
+        $match: {
+          isEmployeeAccessible: true
+        }
+      },
       {
         $group: {
           _id: { itemType: "$itemType", status: "$status" },

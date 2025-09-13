@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Package, Loader2 } from 'lucide-react';
 import { CreateItemsRequest } from '@/types/api';
 import { useItemTypes, useCreateItemsMutation } from '@/hooks/use-queries';
-import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 
 interface AddItemsModalProps {

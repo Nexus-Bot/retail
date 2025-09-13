@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Package, Plus, Search, Edit, Loader2 } from 'lucide-react';
 import { UserRole } from '@/types/api';
-import { useAuth } from '@/contexts/auth-context';
 import { useItemTypes } from '@/hooks/use-queries';
 import type { ItemType } from '@/types/api';
 import { CreateItemTypeModal } from './components/create-item-type-modal';
@@ -110,88 +109,85 @@ function ItemTypesContent() {
       </div>
 
       {/* Item Types Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Item Types List</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading item types...</span>
-            </div>
-          ) : error ? (
-            <div className="text-center py-10">
-              <div className="text-red-500">Failed to load item types</div>
-              <p className="text-sm text-gray-500 mt-2">
-                Please try again later
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Actions</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Grouping</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Item Types List</h2>
+        
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading item types...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-10 bg-gray-50 rounded-md border">
+            <div className="text-red-500">Failed to load item types</div>
+            <p className="text-sm text-gray-500 mt-2">
+              Please try again later
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-md border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Actions</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Grouping</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {itemTypes.map((itemType) => (
+                  <TableRow key={itemType._id}>
+                    <TableCell>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleEdit(itemType)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                    <TableCell className="font-medium">{itemType.name}</TableCell>
+                    <TableCell>{itemType.description || '-'}</TableCell>
+                    <TableCell>{formatGrouping(itemType.grouping)}</TableCell>
+                    <TableCell>
+                      <Badge variant={itemType.isActive ? 'default' : 'secondary'}>
+                        {itemType.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(itemType.createdAt).toLocaleDateString()}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {itemTypes.map((itemType) => (
-                    <TableRow key={itemType._id}>
-                      <TableCell>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => handleEdit(itemType)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                      <TableCell className="font-medium">{itemType.name}</TableCell>
-                      <TableCell>{itemType.description || '-'}</TableCell>
-                      <TableCell>{formatGrouping(itemType.grouping)}</TableCell>
-                      <TableCell>
-                        <Badge variant={itemType.isActive ? 'default' : 'secondary'}>
-                          {itemType.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(itemType.createdAt).toLocaleDateString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          
-          {!isLoading && !error && itemTypes.length === 0 && (
-            <div className="text-center py-10">
-              <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No item types found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm 
-                  ? 'Try adjusting your search.' 
-                  : 'Get started by creating your first item type.'}
-              </p>
-              {!searchTerm && (
-                <Button 
-                  className="mt-4"
-                  onClick={() => setIsCreateModalOpen(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Item Type
-                </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        
+        {!isLoading && !error && itemTypes.length === 0 && (
+          <div className="text-center py-10 bg-gray-50 rounded-md border">
+            <Package className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No item types found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchTerm 
+                ? 'Try adjusting your search.' 
+                : 'Get started by creating your first item type.'}
+            </p>
+            {!searchTerm && (
+              <Button 
+                className="mt-4"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Item Type
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Modals */}
       <CreateItemTypeModal 
