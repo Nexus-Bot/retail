@@ -22,6 +22,11 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import {
+  QuantitySelector,
+  calculateTotalQuantity as calculateTotal,
+  QuantitySubItem,
+} from "@/components/quantity-selector";
+import {
   ItemStatus,
   BulkUpdateItemsRequest,
   ItemType,
@@ -42,12 +47,8 @@ interface BulkUpdateItemsModalProps {
   onItemTypeSelect: (itemTypeId: string) => void;
 }
 
-interface BillingSubItem {
-  quantityType: 'individual' | 'group';
-  quantity: string; // For individual items
-  groupQuantity: string; // Number of groups
-  groupName: string; // Selected group name for group type
-}
+// Using the shared QuantitySubItem interface
+interface BillingSubItem extends QuantitySubItem {}
 
 interface BillingItem {
   itemTypeId: string;
@@ -117,7 +118,9 @@ export function BulkUpdateItemsModal({
     if (!selectedItemTypeData) return;
 
     // Check if item type already exists
-    if (bulkForm.billingItems.some((item) => item.itemTypeId === selectedItemType)) {
+    if (
+      bulkForm.billingItems.some((item) => item.itemTypeId === selectedItemType)
+    ) {
       toast.error("This item type is already added to the bill");
       return;
     }
@@ -157,16 +160,21 @@ export function BulkUpdateItemsModal({
   };
 
   // Add sub-item to a billing item
-  const addSubItem = (itemIndex: number, quantityType: 'individual' | 'group', groupName?: string) => {
+  const addSubItem = (
+    itemIndex: number,
+    quantityType: "individual" | "group",
+    groupName?: string
+  ) => {
     const newSubItem: BillingSubItem = {
+      id: Date.now().toString(), // Add unique ID for QuantitySubItem interface
       quantityType,
-      quantity: quantityType === 'individual' ? "1" : "0",
-      groupQuantity: quantityType === 'group' ? "1" : "0",
+      quantity: quantityType === "individual" ? "1" : "0",
+      groupQuantity: quantityType === "group" ? "1" : "0",
       groupName: groupName || "",
     };
 
-    const updatedItems = bulkForm.billingItems.map((item, index) => 
-      index === itemIndex 
+    const updatedItems = bulkForm.billingItems.map((item, index) =>
+      index === itemIndex
         ? { ...item, subItems: [...item.subItems, newSubItem] }
         : item
     );
@@ -175,9 +183,12 @@ export function BulkUpdateItemsModal({
 
   // Remove sub-item from a billing item
   const removeSubItem = (itemIndex: number, subItemIndex: number) => {
-    const updatedItems = bulkForm.billingItems.map((item, index) => 
-      index === itemIndex 
-        ? { ...item, subItems: item.subItems.filter((_, i) => i !== subItemIndex) }
+    const updatedItems = bulkForm.billingItems.map((item, index) =>
+      index === itemIndex
+        ? {
+            ...item,
+            subItems: item.subItems.filter((_, i) => i !== subItemIndex),
+          }
         : item
     );
     setBulkForm({ ...bulkForm, billingItems: updatedItems });
@@ -198,14 +209,18 @@ export function BulkUpdateItemsModal({
   };
 
   // Update sub-item
-  const updateSubItem = (itemIndex: number, subItemIndex: number, updates: Partial<BillingSubItem>) => {
-    const updatedItems = bulkForm.billingItems.map((item, index) => 
-      index === itemIndex 
-        ? { 
-            ...item, 
-            subItems: item.subItems.map((subItem, subIndex) => 
+  const updateSubItem = (
+    itemIndex: number,
+    subItemIndex: number,
+    updates: Partial<BillingSubItem>
+  ) => {
+    const updatedItems = bulkForm.billingItems.map((item, index) =>
+      index === itemIndex
+        ? {
+            ...item,
+            subItems: item.subItems.map((subItem, subIndex) =>
               subIndex === subItemIndex ? { ...subItem, ...updates } : subItem
-            )
+            ),
           }
         : item
     );
@@ -213,19 +228,7 @@ export function BulkUpdateItemsModal({
   };
 
   // Calculate total quantity for an item type
-  const calculateTotalQuantity = (item: BillingItem): number => {
-    return item.subItems.reduce((total, subItem) => {
-      if (subItem.quantityType === 'group' && subItem.groupName) {
-        const selectedGrouping = item.availableGroupings.find(
-          (g) => g.groupName === subItem.groupName
-        );
-        const unitsPerGroup = selectedGrouping?.unitsPerGroup || 1;
-        return total + (parseInt(subItem.groupQuantity) || 0) * unitsPerGroup;
-      } else {
-        return total + (parseInt(subItem.quantity) || 0);
-      }
-    }, 0);
-  };
+  // Removed - now using shared calculateTotalQuantity from common component
 
   // Calculate grand total
   const calculateGrandTotal = (): number => {
@@ -247,8 +250,11 @@ export function BulkUpdateItemsModal({
 
     // Validate quantities don't exceed available limits
     for (const item of bulkForm.billingItems) {
-      const totalQuantity = calculateTotalQuantity(item);
-      
+      const totalQuantity = calculateTotal(
+        item.subItems,
+        item.availableGroupings
+      );
+
       if (totalQuantity > item.maxAvailable) {
         toast.error(
           `${item.itemTypeName}: Total requested ${totalQuantity} items but only ${item.maxAvailable} available`
@@ -258,7 +264,9 @@ export function BulkUpdateItemsModal({
 
       // Check if item has any sub-items
       if (item.subItems.length === 0) {
-        toast.error(`${item.itemTypeName}: Please add at least one quantity type`);
+        toast.error(
+          `${item.itemTypeName}: Please add at least one quantity type`
+        );
         return;
       }
     }
@@ -323,7 +331,7 @@ export function BulkUpdateItemsModal({
         };
 
         // Add quantity or grouping for this sub-item
-        if (subItem.quantityType === 'group' && subItem.groupName) {
+        if (subItem.quantityType === "group" && subItem.groupName) {
           updateData.groupName = subItem.groupName;
           updateData.groupQuantity = parseInt(subItem.groupQuantity) || 1;
         } else {
@@ -337,16 +345,19 @@ export function BulkUpdateItemsModal({
         ) {
           // Sale transaction - calculate unit price from total item price
           updateData.saleTo = bulkForm.saleTo;
-          const totalItemQuantity = calculateTotalQuantity(billingItem);
-          const subItemQuantity = subItem.quantityType === 'group' && subItem.groupName
-            ? parseInt(subItem.groupQuantity) *
-              (billingItem.availableGroupings.find(
-                (g) => g.groupName === subItem.groupName
-              )?.unitsPerGroup || 1)
-            : parseInt(subItem.quantity) || 1;
-          
+          const totalItemQuantity = calculateTotal(billingItem.subItems, billingItem.availableGroupings);
+          const subItemQuantity =
+            subItem.quantityType === "group" && subItem.groupName
+              ? parseInt(subItem.groupQuantity) *
+                (billingItem.availableGroupings.find(
+                  (g) => g.groupName === subItem.groupName
+                )?.unitsPerGroup || 1)
+              : parseInt(subItem.quantity) || 1;
+
           // Calculate proportional price for this sub-item
-          const proportionalPrice = (parseFloat(billingItem.totalPrice) * subItemQuantity) / totalItemQuantity;
+          const proportionalPrice =
+            (parseFloat(billingItem.totalPrice) * subItemQuantity) /
+            totalItemQuantity;
           updateData.sellPrice = proportionalPrice / subItemQuantity;
         } else if (
           bulkForm.currentStatus === ItemStatus.SOLD &&
@@ -587,10 +598,11 @@ export function BulkUpdateItemsModal({
                   </p>
                 )}
               </div>
-              
+
               <Button onClick={addBillingItem} className="w-full" size="lg">
                 <Plus className="h-4 w-4 mr-2" />
-                Add to {bulkForm.newStatus === ItemStatus.SOLD ? "Bill" : "Returns"}
+                Add to{" "}
+                {bulkForm.newStatus === ItemStatus.SOLD ? "Bill" : "Returns"}
               </Button>
             </div>
           </div>
@@ -612,11 +624,18 @@ export function BulkUpdateItemsModal({
                   {/* Item Header */}
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h4 className="font-medium text-base">{item.itemTypeName}</h4>
+                      <h4 className="font-medium text-base">
+                        {item.itemTypeName}
+                      </h4>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
                         <span>Available: {item.maxAvailable} items</span>
                         <span className="font-medium text-blue-600">
-                          Total: {calculateTotalQuantity(item)} items
+                          Total:{" "}
+                          {calculateTotal(
+                            item.subItems,
+                            item.availableGroupings
+                          )}{" "}
+                          items
                         </span>
                       </div>
                     </div>
@@ -629,90 +648,35 @@ export function BulkUpdateItemsModal({
                     </Button>
                   </div>
 
-                  {/* Sub-items */}
-                  <div className="space-y-3">
-                    {item.subItems.map((subItem, subIndex) => (
-                      <div key={subIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
-                        <div className="flex-1">
-                          {subItem.quantityType === 'individual' ? (
-                            <div className="flex items-center gap-3">
-                              <Label className="text-sm font-medium min-w-[100px]">Individual:</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder="Qty"
-                                value={subItem.quantity}
-                                onChange={(e) =>
-                                  updateSubItem(itemIndex, subIndex, { quantity: e.target.value })
-                                }
-                                className="w-24"
-                              />
-                              <span className="text-sm text-gray-500">items</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-3">
-                              <Label className="text-sm font-medium min-w-[100px]">
-                                {subItem.groupName}:
-                              </Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder="Groups"
-                                value={subItem.groupQuantity}
-                                onChange={(e) =>
-                                  updateSubItem(itemIndex, subIndex, { groupQuantity: e.target.value })
-                                }
-                                className="w-24"
-                              />
-                              <span className="text-sm text-gray-500">
-                                × {item.availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup} = {' '}
-                                {parseInt(subItem.groupQuantity) * (item.availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup || 1)} items
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeSubItem(itemIndex, subIndex)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Add Sub-item Buttons */}
-                  <div className="mt-3 pt-3 border-t space-y-2">
-                    <Label className="text-sm font-medium">Add quantity type:</Label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => addSubItem(itemIndex, 'individual')}
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Individual
-                      </Button>
-                      {item.availableGroupings.map((group) => (
-                        <Button
-                          key={group.groupName}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addSubItem(itemIndex, 'group', group.groupName)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {group.groupName}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Sub-items using common component */}
+                  <QuantitySelector
+                    subItems={item.subItems}
+                    availableGroupings={item.availableGroupings}
+                    onAddSubItem={(type, groupName) =>
+                      addSubItem(itemIndex, type, groupName)
+                    }
+                    onRemoveSubItem={(subItemId) => {
+                      const subItemIndex = item.subItems.findIndex(
+                        (sub) => sub.id === subItemId
+                      );
+                      if (subItemIndex !== -1)
+                        removeSubItem(itemIndex, subItemIndex);
+                    }}
+                    onUpdateSubItem={(subItemId, updates) => {
+                      const subItemIndex = item.subItems.findIndex(
+                        (sub) => sub.id === subItemId
+                      );
+                      if (subItemIndex !== -1)
+                        updateSubItem(itemIndex, subItemIndex, updates);
+                    }}
+                  />
 
                   {/* Total Price for Sales */}
                   {bulkForm.newStatus === ItemStatus.SOLD && (
                     <div className="mt-4 pt-4 border-t">
-                      <Label className="font-medium">Total Price for {item.itemTypeName}</Label>
+                      <Label className="font-medium">
+                        Total Price for {item.itemTypeName}
+                      </Label>
                       <div className="flex items-center space-x-2 mt-1">
                         <span className="text-lg">₹</span>
                         <Input
@@ -722,13 +686,17 @@ export function BulkUpdateItemsModal({
                           placeholder="0.00"
                           value={item.totalPrice}
                           onChange={(e) =>
-                            updateBillingItem(itemIndex, { totalPrice: e.target.value })
+                            updateBillingItem(itemIndex, {
+                              totalPrice: e.target.value,
+                            })
                           }
                           className="flex-1 text-lg font-medium"
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        For all {calculateTotalQuantity(item)} items combined
+                        For all{" "}
+                        {calculateTotal(item.subItems, item.availableGroupings)}{" "}
+                        items combined
                       </p>
                     </div>
                   )}

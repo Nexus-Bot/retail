@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,6 +9,7 @@ import { Package, Loader2 } from 'lucide-react';
 import { CreateItemsRequest } from '@/types/api';
 import { useItemTypes, useCreateItemsMutation } from '@/hooks/use-queries';
 import { toast } from 'sonner';
+import { QuantitySelector, calculateTotalQuantity, QuantitySubItem } from '@/components/quantity-selector';
 
 interface AddItemsModalProps {
   isOpen: boolean;
@@ -19,10 +19,8 @@ interface AddItemsModalProps {
 export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
   const [formData, setFormData] = useState({
     itemTypeId: '',
-    quantity: '1',
-    groupQuantity: '',
-    groupName: '',
   });
+  const [subItems, setSubItems] = useState<QuantitySubItem[]>([]);
 
   // Fetch item types from the backend using optimized hook
   const { data: itemTypesData, isLoading: itemTypesLoading } = useItemTypes({
@@ -49,66 +47,90 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
     });
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  // Get selected item type details
+  const availableGroupings = selectedItemType?.grouping || [];
 
   const handleItemTypeChange = (value: string) => {
     setFormData(prev => ({
       ...prev,
-      itemTypeId: value,
-      groupName: '', // Reset group when item type changes
+      itemTypeId: value
     }));
+    // Reset sub-items when item type changes
+    setSubItems([]);
   };
 
-  const handleGroupNameChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      groupName: value
-    }));
+  // Sub-item management functions
+  const addSubItem = (type: "individual" | "group", groupName?: string) => {
+    const newId = Date.now().toString();
+    const newSubItem: QuantitySubItem = {
+      id: newId,
+      quantityType: type,
+      quantity: "1",
+      groupQuantity: "1",
+      groupName: groupName || availableGroupings[0]?.groupName || "",
+    };
+    setSubItems([...subItems, newSubItem]);
+  };
+
+  const removeSubItem = (id: string) => {
+    setSubItems(subItems.filter((item) => item.id !== id));
+  };
+
+  const updateSubItem = (id: string, updates: Partial<QuantitySubItem>) => {
+    setSubItems(
+      subItems.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
   };
 
   const calculateTotalItems = () => {
-    if (formData.groupQuantity && formData.groupName && selectedItemType?.grouping) {
-      const grouping = selectedItemType.grouping.find(g => g.groupName === formData.groupName);
-      const groupQty = parseInt(formData.groupQuantity) || 0;
-      if (grouping && groupQty > 0) {
-        return groupQty * grouping.unitsPerGroup;
-      }
-    }
-    return parseInt(formData.quantity) || 0;
+    return calculateTotalQuantity(subItems, availableGroupings);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     
     if (!formData.itemTypeId.trim()) {
       toast.error('Item type is required');
       return;
     }
 
+    if (subItems.length === 0) {
+      toast.error('Please add at least one quantity item');
+      return;
+    }
 
-    const submitData: CreateItemsRequest = {
-      itemTypeId: formData.itemTypeId,
-      quantity: formData.groupQuantity ? undefined : parseInt(formData.quantity) || 1,
-      groupQuantity: formData.groupQuantity ? parseInt(formData.groupQuantity) || 1 : undefined,
-      groupName: formData.groupName || undefined,
-    };
-
-    handleCreateItems(submitData);
+    // For now, we'll handle multiple sub-items by processing them one by one
+    // since the backend CreateItemsRequest expects single item data
+    // TODO: Backend could be enhanced to handle multiple sub-items in single request
+    if (subItems.length === 1) {
+      const subItem = subItems[0];
+      const submitData: CreateItemsRequest = {
+        itemTypeId: formData.itemTypeId,
+      };
+      
+      if (subItem.quantityType === "group" && subItem.groupName) {
+        submitData.groupName = subItem.groupName;
+        submitData.groupQuantity = parseInt(subItem.groupQuantity) || 1;
+      } else {
+        submitData.quantity = parseInt(subItem.quantity) || 1;
+      }
+      
+      handleCreateItems(submitData);
+    } else {
+      // For multiple sub-items, calculate total quantity for now
+      const submitData: CreateItemsRequest = {
+        itemTypeId: formData.itemTypeId,
+        quantity: calculateTotalItems(),
+      };
+      
+      handleCreateItems(submitData);
+    }
   };
 
   const handleClose = () => {
     setFormData({
       itemTypeId: '',
-      quantity: '1',
-      groupQuantity: '',
-      groupName: '',
     });
+    setSubItems([]);
     onClose();
   };
 
@@ -125,7 +147,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-6">
           {/* Item Type */}
           <div className="space-y-2">
             <Label htmlFor="itemTypeId">Item Type *</Label>
@@ -153,70 +175,27 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
             )}
           </div>
 
-          {/* Quantity Options */}
+          {/* Quantity Selection with Sub-Items */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Quantity</h3>
             
-            {/* Individual Quantity */}
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Individual Items</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="text"
-                inputMode="numeric"
-                placeholder="Number of individual items"
-                value={formData.quantity}
-                onChange={handleInputChange}
-                disabled={createItemsMutation.isPending}
-              />
-            </div>
-
-            {/* Group Quantity (if available) */}
-            {selectedItemType && selectedItemType.grouping && selectedItemType.grouping.length > 0 && (
-              <>
-                <div className="text-center text-sm text-gray-500">OR</div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="groupName">Group Type</Label>
-                    <Select value={formData.groupName} onValueChange={handleGroupNameChange} disabled={createItemsMutation.isPending}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select group type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedItemType.grouping.map((group, index) => (
-                          <SelectItem key={index} value={group.groupName}>
-                            {group.groupName} ({group.unitsPerGroup} items)
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="groupQuantity">Number of Groups</Label>
-                    <Input
-                      id="groupQuantity"
-                      name="groupQuantity"
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="Number of groups"
-                      value={formData.groupQuantity}
-                      onChange={handleInputChange}
-                      disabled={createItemsMutation.isPending || !formData.groupName}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
+            <QuantitySelector
+              subItems={subItems}
+              availableGroupings={availableGroupings}
+              onAddSubItem={addSubItem}
+              onRemoveSubItem={removeSubItem}
+              onUpdateSubItem={updateSubItem}
+              className="space-y-4"
+            />
 
             {/* Total Calculation */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="text-sm font-medium text-blue-900">
-                Total items to be created: <span className="text-lg">{calculateTotalItems()}</span>
+            {subItems.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="text-sm font-medium text-blue-900">
+                  Total items to be created: <span className="text-lg">{calculateTotalItems()}</span>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           
@@ -230,8 +209,8 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               Cancel
             </Button>
             <Button 
-              type="submit" 
-              disabled={createItemsMutation.isPending || !formData.itemTypeId}
+              onClick={handleSubmit}
+              disabled={createItemsMutation.isPending || !formData.itemTypeId || subItems.length === 0}
               className="w-full sm:w-auto"
             >
               {createItemsMutation.isPending ? (
@@ -244,7 +223,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
               )}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

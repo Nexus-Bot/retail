@@ -218,6 +218,7 @@ function ItemsManagementContent() {
         itemTypes={itemTypes}
         selectedItemType={selectedItemType}
         onItemTypeChange={setSelectedItemType}
+        summary={summary}
       />
 
       <ItemTypeDetailsModal
