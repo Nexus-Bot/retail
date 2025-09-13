@@ -42,16 +42,20 @@ interface BulkUpdateItemsModalProps {
   onItemTypeSelect: (itemTypeId: string) => void;
 }
 
+interface BillingSubItem {
+  quantityType: 'individual' | 'group';
+  quantity: string; // For individual items
+  groupQuantity: string; // Number of groups
+  groupName: string; // Selected group name for group type
+}
+
 interface BillingItem {
   itemTypeId: string;
   itemTypeName: string;
-  useGrouping: boolean;
-  quantity: string;
-  groupQuantity: string;
-  groupName: string;
-  totalPrice: string; // Total price for this line item
+  totalPrice: string; // Total price for this item type
   availableGroupings: any[];
   maxAvailable: number; // Maximum available items for current status
+  subItems: BillingSubItem[]; // Array of different quantity types
 }
 
 interface BulkForm {
@@ -100,7 +104,7 @@ export function BulkUpdateItemsModal({
     return statusCount?.count || 0;
   };
 
-  // Add new billing item
+  // Add new billing item (create new item type entry)
   const addBillingItem = () => {
     if (!selectedItemType) {
       toast.error("Please select an item type first");
@@ -113,9 +117,7 @@ export function BulkUpdateItemsModal({
     if (!selectedItemTypeData) return;
 
     // Check if item type already exists
-    if (
-      bulkForm.billingItems.some((item) => item.itemTypeId === selectedItemType)
-    ) {
+    if (bulkForm.billingItems.some((item) => item.itemTypeId === selectedItemType)) {
       toast.error("This item type is already added to the bill");
       return;
     }
@@ -139,13 +141,10 @@ export function BulkUpdateItemsModal({
     const newItem: BillingItem = {
       itemTypeId: selectedItemType,
       itemTypeName: selectedItemTypeData.name,
-      useGrouping: true,
-      quantity: "1",
-      groupQuantity: "1",
-      groupName: "",
       totalPrice: "",
       availableGroupings: selectedItemTypeData.grouping || [],
       maxAvailable: availableCount,
+      subItems: [], // Start with no sub-items
     };
 
     setBulkForm({
@@ -155,6 +154,33 @@ export function BulkUpdateItemsModal({
 
     // Clear item type selection
     onItemTypeSelect("");
+  };
+
+  // Add sub-item to a billing item
+  const addSubItem = (itemIndex: number, quantityType: 'individual' | 'group', groupName?: string) => {
+    const newSubItem: BillingSubItem = {
+      quantityType,
+      quantity: quantityType === 'individual' ? "1" : "0",
+      groupQuantity: quantityType === 'group' ? "1" : "0",
+      groupName: groupName || "",
+    };
+
+    const updatedItems = bulkForm.billingItems.map((item, index) => 
+      index === itemIndex 
+        ? { ...item, subItems: [...item.subItems, newSubItem] }
+        : item
+    );
+    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+  };
+
+  // Remove sub-item from a billing item
+  const removeSubItem = (itemIndex: number, subItemIndex: number) => {
+    const updatedItems = bulkForm.billingItems.map((item, index) => 
+      index === itemIndex 
+        ? { ...item, subItems: item.subItems.filter((_, i) => i !== subItemIndex) }
+        : item
+    );
+    setBulkForm({ ...bulkForm, billingItems: updatedItems });
   };
 
   // Remove billing item
@@ -169,6 +195,36 @@ export function BulkUpdateItemsModal({
       i === index ? { ...item, ...updates } : item
     );
     setBulkForm({ ...bulkForm, billingItems: updatedItems });
+  };
+
+  // Update sub-item
+  const updateSubItem = (itemIndex: number, subItemIndex: number, updates: Partial<BillingSubItem>) => {
+    const updatedItems = bulkForm.billingItems.map((item, index) => 
+      index === itemIndex 
+        ? { 
+            ...item, 
+            subItems: item.subItems.map((subItem, subIndex) => 
+              subIndex === subItemIndex ? { ...subItem, ...updates } : subItem
+            )
+          }
+        : item
+    );
+    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+  };
+
+  // Calculate total quantity for an item type
+  const calculateTotalQuantity = (item: BillingItem): number => {
+    return item.subItems.reduce((total, subItem) => {
+      if (subItem.quantityType === 'group' && subItem.groupName) {
+        const selectedGrouping = item.availableGroupings.find(
+          (g) => g.groupName === subItem.groupName
+        );
+        const unitsPerGroup = selectedGrouping?.unitsPerGroup || 1;
+        return total + (parseInt(subItem.groupQuantity) || 0) * unitsPerGroup;
+      } else {
+        return total + (parseInt(subItem.quantity) || 0);
+      }
+    }, 0);
   };
 
   // Calculate grand total
@@ -190,24 +246,19 @@ export function BulkUpdateItemsModal({
     }
 
     // Validate quantities don't exceed available limits
-    for (let i = 0; i < bulkForm.billingItems.length; i++) {
-      const item = bulkForm.billingItems[i];
-      let requestedQuantity: number;
-
-      if (item.useGrouping && item.groupName) {
-        const selectedGrouping = item.availableGroupings.find(
-          (g) => g.groupName === item.groupName
+    for (const item of bulkForm.billingItems) {
+      const totalQuantity = calculateTotalQuantity(item);
+      
+      if (totalQuantity > item.maxAvailable) {
+        toast.error(
+          `${item.itemTypeName}: Total requested ${totalQuantity} items but only ${item.maxAvailable} available`
         );
-        const unitsPerGroup = selectedGrouping?.unitsPerGroup || 1;
-        requestedQuantity = parseInt(item.groupQuantity) * unitsPerGroup;
-      } else {
-        requestedQuantity = parseInt(item.quantity) || 1;
+        return;
       }
 
-      if (requestedQuantity > item.maxAvailable) {
-        toast.error(
-          `${item.itemTypeName}: Requested ${requestedQuantity} items but only ${item.maxAvailable} available`
-        );
+      // Check if item has any sub-items
+      if (item.subItems.length === 0) {
+        toast.error(`${item.itemTypeName}: Please add at least one quantity type`);
         return;
       }
     }
@@ -259,73 +310,77 @@ export function BulkUpdateItemsModal({
       }
     }
 
-    // Process each billing item as a separate update request
+    // Process each sub-item as a separate update request
     let totalItemsUpdated = 0;
     const errors: string[] = [];
 
     for (const billingItem of bulkForm.billingItems) {
-      const updateData: BulkUpdateItemsRequest = {
-        itemTypeId: billingItem.itemTypeId,
-        currentStatus: bulkForm.currentStatus,
-        status: bulkForm.newStatus,
-      };
+      for (const subItem of billingItem.subItems) {
+        const updateData: BulkUpdateItemsRequest = {
+          itemTypeId: billingItem.itemTypeId,
+          currentStatus: bulkForm.currentStatus,
+          status: bulkForm.newStatus,
+        };
 
-      // Add quantity or grouping
-      if (billingItem.useGrouping && billingItem.groupName) {
-        updateData.groupName = billingItem.groupName;
-        updateData.groupQuantity = parseInt(billingItem.groupQuantity) || 1;
-      } else {
-        updateData.quantity = parseInt(billingItem.quantity) || 1;
-      }
+        // Add quantity or grouping for this sub-item
+        if (subItem.quantityType === 'group' && subItem.groupName) {
+          updateData.groupName = subItem.groupName;
+          updateData.groupQuantity = parseInt(subItem.groupQuantity) || 1;
+        } else {
+          updateData.quantity = parseInt(subItem.quantity) || 1;
+        }
 
-      // Add required fields based on transition
-      if (
-        bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE &&
-        bulkForm.newStatus === ItemStatus.SOLD
-      ) {
-        // Sale transaction - calculate unit price from total
-        updateData.saleTo = bulkForm.saleTo;
-        const totalQuantity =
-          billingItem.useGrouping && billingItem.groupName
-            ? parseInt(billingItem.groupQuantity) *
+        // Add required fields based on transition
+        if (
+          bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE &&
+          bulkForm.newStatus === ItemStatus.SOLD
+        ) {
+          // Sale transaction - calculate unit price from total item price
+          updateData.saleTo = bulkForm.saleTo;
+          const totalItemQuantity = calculateTotalQuantity(billingItem);
+          const subItemQuantity = subItem.quantityType === 'group' && subItem.groupName
+            ? parseInt(subItem.groupQuantity) *
               (billingItem.availableGroupings.find(
-                (g) => g.groupName === billingItem.groupName
+                (g) => g.groupName === subItem.groupName
               )?.unitsPerGroup || 1)
-            : parseInt(billingItem.quantity) || 1;
-        updateData.sellPrice =
-          parseFloat(billingItem.totalPrice) / totalQuantity;
-      } else if (
-        bulkForm.currentStatus === ItemStatus.SOLD &&
-        bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
-      ) {
-        // Return processing
-        updateData.saleTo = bulkForm.saleTo;
-        updateData.currentHolder = user?._id;
-      } else if (
-        bulkForm.currentStatus === ItemStatus.IN_INVENTORY &&
-        bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
-      ) {
-        // Assigning to employee from inventory
-        updateData.currentHolder = user?._id;
-      }
+            : parseInt(subItem.quantity) || 1;
+          
+          // Calculate proportional price for this sub-item
+          const proportionalPrice = (parseFloat(billingItem.totalPrice) * subItemQuantity) / totalItemQuantity;
+          updateData.sellPrice = proportionalPrice / subItemQuantity;
+        } else if (
+          bulkForm.currentStatus === ItemStatus.SOLD &&
+          bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
+        ) {
+          // Return processing
+          updateData.saleTo = bulkForm.saleTo;
+          updateData.currentHolder = user?._id;
+        } else if (
+          bulkForm.currentStatus === ItemStatus.IN_INVENTORY &&
+          bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
+        ) {
+          // Assigning to employee from inventory
+          updateData.currentHolder = user?._id;
+        }
 
-      if (bulkForm.notes) {
-        updateData.notes = bulkForm.notes;
-      }
+        if (bulkForm.notes) {
+          updateData.notes = bulkForm.notes;
+        }
 
-      try {
-        const response = await new Promise<any>((resolve, reject) => {
-          bulkUpdateMutation.mutate(updateData, {
-            onSuccess: resolve,
-            onError: reject,
+        try {
+          const response = await new Promise<any>((resolve, reject) => {
+            bulkUpdateMutation.mutate(updateData, {
+              onSuccess: resolve,
+              onError: reject,
+            });
           });
-        });
-        totalItemsUpdated += response.data.data?.itemsUpdated || 0;
-      } catch (error: any) {
-        const errorMessage =
-          error?.response?.data?.message ||
-          `Failed to update ${billingItem.itemTypeName}`;
-        errors.push(errorMessage);
+          totalItemsUpdated += response.data.data?.itemsUpdated || 0;
+        } catch (error: any) {
+          const errorMessage =
+            error?.response?.data?.message ||
+            `Failed to update ${billingItem.itemTypeName}`;
+          errors.push(errorMessage);
+        }
       }
     }
 
@@ -488,7 +543,7 @@ export function BulkUpdateItemsModal({
           {/* Add Item Section */}
           <div className="border rounded-lg p-4 bg-gray-50">
             <Label className="font-medium mb-3 block">Add Item to Bill</Label>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <Select
                   value={selectedItemType}
@@ -532,10 +587,10 @@ export function BulkUpdateItemsModal({
                   </p>
                 )}
               </div>
+              
               <Button onClick={addBillingItem} className="w-full" size="lg">
                 <Plus className="h-4 w-4 mr-2" />
-                Add to{" "}
-                {bulkForm.newStatus === ItemStatus.SOLD ? "Bill" : "Returns"}
+                Add to {bulkForm.newStatus === ItemStatus.SOLD ? "Bill" : "Returns"}
               </Button>
             </div>
           </div>
@@ -549,181 +604,134 @@ export function BulkUpdateItemsModal({
                   : "Return Items"}
               </h3>
 
-              {bulkForm.billingItems.map((item, index) => (
+              {bulkForm.billingItems.map((item, itemIndex) => (
                 <div
-                  key={index}
+                  key={itemIndex}
                   className="border rounded-lg p-4 bg-white shadow-sm"
                 >
-                  <div className="flex justify-between items-start mb-3">
+                  {/* Item Header */}
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h4 className="font-medium text-base">
-                        {item.itemTypeName}
-                      </h4>
-                      <p className="text-sm text-green-600 font-medium">
-                        Available: {item.maxAvailable} items
-                      </p>
+                      <h4 className="font-medium text-base">{item.itemTypeName}</h4>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <span>Available: {item.maxAvailable} items</span>
+                        <span className="font-medium text-blue-600">
+                          Total: {calculateTotalQuantity(item)} items
+                        </span>
+                      </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => removeBillingItem(index)}
-                      className="ml-2"
+                      onClick={() => removeBillingItem(itemIndex)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* Quantity Selection */}
-                    <div className="space-y-3">
-                      <Label className="font-medium">Quantity</Label>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="radio"
-                            id={`qty-${index}`}
-                            name={`selection-${index}`}
-                            checked={!item.useGrouping}
-                            onChange={() =>
-                              updateBillingItem(index, { useGrouping: false })
-                            }
-                            className="h-4 w-4"
-                          />
-                          <Label
-                            htmlFor={`qty-${index}`}
-                            className="text-sm font-normal"
-                          >
-                            By Quantity
-                          </Label>
-                          {!item.useGrouping && (
-                            <Input
-                              type="number"
-                              min="1"
-                              placeholder="Qty"
-                              value={item.quantity}
-                              onChange={(e) =>
-                                updateBillingItem(index, {
-                                  quantity: e.target.value,
-                                })
-                              }
-                              className="w-20 ml-2"
-                            />
+                  {/* Sub-items */}
+                  <div className="space-y-3">
+                    {item.subItems.map((subItem, subIndex) => (
+                      <div key={subIndex} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+                        <div className="flex-1">
+                          {subItem.quantityType === 'individual' ? (
+                            <div className="flex items-center gap-3">
+                              <Label className="text-sm font-medium min-w-[100px]">Individual:</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder="Qty"
+                                value={subItem.quantity}
+                                onChange={(e) =>
+                                  updateSubItem(itemIndex, subIndex, { quantity: e.target.value })
+                                }
+                                className="w-24"
+                              />
+                              <span className="text-sm text-gray-500">items</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-3">
+                              <Label className="text-sm font-medium min-w-[100px]">
+                                {subItem.groupName}:
+                              </Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                placeholder="Groups"
+                                value={subItem.groupQuantity}
+                                onChange={(e) =>
+                                  updateSubItem(itemIndex, subIndex, { groupQuantity: e.target.value })
+                                }
+                                className="w-24"
+                              />
+                              <span className="text-sm text-gray-500">
+                                × {item.availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup} = {' '}
+                                {parseInt(subItem.groupQuantity) * (item.availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup || 1)} items
+                              </span>
+                            </div>
                           )}
                         </div>
-
-                        {item.availableGroupings.length > 0 && (
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-3">
-                              <input
-                                type="radio"
-                                id={`grp-${index}`}
-                                name={`selection-${index}`}
-                                checked={item.useGrouping}
-                                onChange={() =>
-                                  updateBillingItem(index, {
-                                    useGrouping: true,
-                                  })
-                                }
-                                className="h-4 w-4"
-                              />
-                              <Label
-                                htmlFor={`grp-${index}`}
-                                className="text-sm font-normal"
-                              >
-                                By Grouping
-                              </Label>
-                            </div>
-
-                            {item.useGrouping && (
-                              <div className="ml-7 space-y-3">
-                                <div>
-                                  <Label className="text-sm">
-                                    Grouping Type
-                                  </Label>
-                                  <Select
-                                    value={item.groupName}
-                                    onValueChange={(value) =>
-                                      updateBillingItem(index, {
-                                        groupName: value,
-                                      })
-                                    }
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select grouping" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {item.availableGroupings.map((group) => (
-                                        <SelectItem
-                                          key={group.groupName}
-                                          value={group.groupName}
-                                        >
-                                          {group.groupName} (
-                                          {group.unitsPerGroup} units)
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label className="text-sm">
-                                    Number of Groups
-                                  </Label>
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    placeholder="Groups"
-                                    value={item.groupQuantity}
-                                    onChange={(e) =>
-                                      updateBillingItem(index, {
-                                        groupQuantity: e.target.value,
-                                      })
-                                    }
-                                    className="w-full"
-                                  />
-                                  {item.groupName && (
-                                    <p className="text-xs text-gray-500 mt-1">
-                                      Max groups available:{" "}
-                                      {Math.floor(
-                                        item.maxAvailable /
-                                          (item.availableGroupings.find(
-                                            (g) =>
-                                              g.groupName === item.groupName
-                                          )?.unitsPerGroup || 1)
-                                      )}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSubItem(itemIndex, subIndex)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
-                    </div>
-
-                    {/* Total Price for Sales */}
-                    {bulkForm.newStatus === ItemStatus.SOLD && (
-                      <div>
-                        <Label className="font-medium">Total Price</Label>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="text-lg">₹</span>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            value={item.totalPrice}
-                            onChange={(e) =>
-                              updateBillingItem(index, {
-                                totalPrice: e.target.value,
-                              })
-                            }
-                            className="flex-1 text-lg font-medium"
-                          />
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
+
+                  {/* Add Sub-item Buttons */}
+                  <div className="mt-3 pt-3 border-t space-y-2">
+                    <Label className="text-sm font-medium">Add quantity type:</Label>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addSubItem(itemIndex, 'individual')}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Individual
+                      </Button>
+                      {item.availableGroupings.map((group) => (
+                        <Button
+                          key={group.groupName}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addSubItem(itemIndex, 'group', group.groupName)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          {group.groupName}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Total Price for Sales */}
+                  {bulkForm.newStatus === ItemStatus.SOLD && (
+                    <div className="mt-4 pt-4 border-t">
+                      <Label className="font-medium">Total Price for {item.itemTypeName}</Label>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <span className="text-lg">₹</span>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={item.totalPrice}
+                          onChange={(e) =>
+                            updateBillingItem(itemIndex, { totalPrice: e.target.value })
+                          }
+                          className="flex-1 text-lg font-medium"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        For all {calculateTotalQuantity(item)} items combined
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
 

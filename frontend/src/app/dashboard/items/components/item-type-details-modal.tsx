@@ -238,6 +238,37 @@ export function ItemTypeDetailsModal({
                           </Badge>
                         </div>
                         
+                        {/* Employee Breakdown for WITH_EMPLOYEE and SOLD statuses */}
+                        {(statusInfo.status === ItemStatus.WITH_EMPLOYEE || statusInfo.status === ItemStatus.SOLD) && summary && (
+                          <div className="mb-4">
+                            {(() => {
+                              const statusCount = summary.statusCounts.find(s => s.status === statusInfo.status);
+                              const employeeBreakdown = statusCount?.employeeBreakdown || [];
+                              
+                              if (employeeBreakdown.length > 0) {
+                                return (
+                                  <div className="bg-white border rounded-lg p-4">
+                                    <h5 className="font-medium text-sm text-gray-700 mb-3">
+                                      {statusInfo.status === ItemStatus.WITH_EMPLOYEE ? 'Employee Distribution' : 'Sales by Employee'}
+                                    </h5>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                      {employeeBreakdown.map((employee) => (
+                                        <div key={employee.employeeId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                          <span className="font-medium text-sm">{employee.employeeName}</span>
+                                          <Badge variant="outline" className="text-xs">
+                                            {employee.count} items
+                                          </Badge>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        )}
+
                         {statusInfo.groupBreakdown.length === 0 && statusInfo.remainingIndividualItems > 0 ? (
                           <div className="bg-white p-4 rounded border">
                             <div className="text-center">

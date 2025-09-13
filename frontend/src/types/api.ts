@@ -556,6 +556,13 @@ export type DashboardAnalyticsResponse = BaseApiResponse<DashboardAnalytics>;
 export interface ItemStatusCount {
   status: ItemStatus;
   count: number;
+  employeeBreakdown: EmployeeItemBreakdown[]; // Employee breakdown for WITH_EMPLOYEE and SOLD statuses
+}
+
+export interface EmployeeItemBreakdown {
+  employeeId: string;
+  employeeName: string;
+  count: number;
 }
 
 export interface ItemTypeSummary {

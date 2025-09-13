@@ -223,7 +223,7 @@ export const getItems = async (req: Request, res: Response) => {
       { $match: summaryFilter },
       {
         $group: {
-          _id: { itemType: "$itemType", status: "$status" },
+          _id: { itemType: "$itemType", status: "$status", currentHolder: "$currentHolder" },
           count: { $sum: 1 },
         },
       },
@@ -236,13 +236,53 @@ export const getItems = async (req: Request, res: Response) => {
         },
       },
       {
+        $lookup: {
+          from: "users",
+          localField: "_id.currentHolder",
+          foreignField: "_id",
+          as: "employee",
+          pipeline: [{ $project: { username: 1 } }],
+        },
+      },
+      {
+        $group: {
+          _id: { itemType: "$_id.itemType", status: "$_id.status" },
+          itemType: { $first: { $arrayElemAt: ["$itemType", 0] } },
+          count: { $sum: "$count" },
+          employeeBreakdown: {
+            $push: {
+              $cond: {
+                if: { 
+                  $and: [
+                    { $ne: ["$_id.currentHolder", null] },
+                    { $in: ["$_id.status", ["with_employee", "sold"]] }
+                  ]
+                },
+                then: {
+                  employeeId: "$_id.currentHolder",
+                  employeeName: { $arrayElemAt: ["$employee.username", 0] },
+                  count: "$count"
+                },
+                else: "$$REMOVE"
+              }
+            }
+          },
+        },
+      },
+      {
         $group: {
           _id: "$_id.itemType",
-          itemTypeName: { $first: { $arrayElemAt: ["$itemType.name", 0] } },
+          itemTypeName: { $first: "$itemType.name" },
           statusCounts: {
             $push: {
               status: "$_id.status",
               count: "$count",
+              employeeBreakdown: {
+                $filter: {
+                  input: "$employeeBreakdown",
+                  cond: { $ne: ["$$this", "$$REMOVE"] }
+                }
+              }
             },
           },
           totalCount: { $sum: "$count" },
@@ -385,6 +425,11 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       if (!(currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE)) {
         filter.currentHolder = currentUser.id;
       }
+    }
+    
+    // For WITH_EMPLOYEE -> IN_INVENTORY transition, filter by specific employee
+    if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.IN_INVENTORY && currentHolder) {
+      filter.currentHolder = currentHolder;
     }
     
     // For return processing, filter by specific customer (saleTo)
@@ -556,6 +601,53 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       updateData.status = status;
       updateData.currentHolder = currentHolder;
       updateData.returnDate = new Date();
+    }
+    
+    // 4. WITH_EMPLOYEE -> IN_INVENTORY (Return to Inventory - Owner Only)
+    else if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.IN_INVENTORY) {
+      // Only owners can return items from employee to inventory
+      if (currentUser?.role !== UserRole.OWNER) {
+        return res.status(403).json({
+          success: false,
+          message: "Only agency owners can return items from employees to inventory",
+        });
+      }
+      
+      // Validate required fields
+      if (!currentHolder) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee ID (currentHolder) is required to specify which employee's items to return to inventory",
+        });
+      }
+      
+      // Validate employee exists and belongs to same agency
+      const employee = await User.findById(currentHolder);
+      if (!employee || employee.role !== UserRole.EMPLOYEE) {
+        return res.status(404).json({
+          success: false,
+          message: "Valid employee not found",
+        });
+      }
+      if (employee.agency?.toString() !== currentUser?.agencyId) {
+        return res.status(400).json({
+          success: false,
+          message: "Employee must be from your agency",
+        });
+      }
+      
+      // Block unrelated fields for this transition
+      if (saleTo !== undefined || sellPrice !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "saleTo and sellPrice are not allowed for inventory return transitions",
+        });
+      }
+      
+      // Set update data - clear employee assignment and return to inventory
+      updateData.status = status;
+      updateData.currentHolder = null; // Remove employee assignment
+      updateData.returnDate = new Date(); // Track when returned to inventory
     }
     
     // Block invalid transitions
