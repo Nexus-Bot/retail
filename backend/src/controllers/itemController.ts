@@ -386,6 +386,12 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
         filter.currentHolder = currentUser.id;
       }
     }
+    
+    // For return processing, filter by specific customer (saleTo)
+    // This ensures customers can only return items they originally purchased
+    if (currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE && saleTo) {
+      filter.saleTo = saleTo;
+    }
 
     // Find items to update
     const itemsFound = await Item.find(filter).limit(itemsToUpdate);
@@ -507,6 +513,13 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
         });
       }
       
+      if (!saleTo) {
+        return res.status(400).json({
+          success: false,
+          message: "Customer ID (saleTo) is required to validate return eligibility",
+        });
+      }
+      
       // Validate employee exists and belongs to same agency (any employee can process returns)
       const employee = await User.findById(currentHolder);
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
@@ -522,11 +535,20 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
         });
       }
       
-      // Block unrelated fields for this transition
-      if (saleTo !== undefined || sellPrice !== undefined) {
+      // Validate customer exists and belongs to same agency
+      const customer = await Customer.findById(saleTo);
+      if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
         return res.status(400).json({
           success: false,
-          message: "saleTo and sellPrice are not allowed for return processing",
+          message: "Invalid customer or customer not from your agency",
+        });
+      }
+      
+      // Block unrelated fields for this transition
+      if (sellPrice !== undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "sellPrice is not allowed for return processing",
         });
       }
       

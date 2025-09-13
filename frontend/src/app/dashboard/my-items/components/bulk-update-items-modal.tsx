@@ -83,6 +83,14 @@ export function BulkUpdateItemsModal({
       }
     }
 
+    if (bulkForm.currentStatus === ItemStatus.SOLD && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE) {
+      // Return processing requires customer validation
+      if (!bulkForm.saleTo) {
+        toast.error('Please select the customer who is returning the items');
+        return;
+      }
+    }
+
     if (
       (bulkForm.currentStatus === ItemStatus.IN_INVENTORY && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE) ||
       (bulkForm.currentStatus === ItemStatus.SOLD && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE)
@@ -113,11 +121,12 @@ export function BulkUpdateItemsModal({
       // Sale transaction
       updateData.saleTo = bulkForm.saleTo;
       updateData.sellPrice = parseFloat(bulkForm.sellPrice);
-    } else if (
-      (bulkForm.currentStatus === ItemStatus.IN_INVENTORY && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE) ||
-      (bulkForm.currentStatus === ItemStatus.SOLD && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE)
-    ) {
-      // Assigning to employee
+    } else if (bulkForm.currentStatus === ItemStatus.SOLD && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE) {
+      // Return processing - requires customer validation and employee assignment
+      updateData.saleTo = bulkForm.saleTo;
+      updateData.currentHolder = user?._id;
+    } else if (bulkForm.currentStatus === ItemStatus.IN_INVENTORY && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE) {
+      // Assigning to employee from inventory
       updateData.currentHolder = user?._id;
     }
 
@@ -277,13 +286,32 @@ export function BulkUpdateItemsModal({
             </div>
           )}
 
-          {/* Return Processing Info */}
+          {/* Return Processing Fields */}
           {bulkForm.currentStatus === ItemStatus.SOLD && bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE && (
-            <div className="p-4 border rounded-lg bg-blue-50">
+            <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
               <h3 className="text-sm font-medium text-blue-800">Return Processing</h3>
-              <p className="text-sm text-blue-600 mt-1">
-                Items will be returned to your care for processing.
+              <p className="text-sm text-blue-600 mb-3">
+                Select the customer who is returning items. Only items originally sold to this customer can be returned.
               </p>
+              
+              <div className="space-y-2">
+                <Label htmlFor="returnCustomer">Customer Returning Items *</Label>
+                <Select 
+                  value={bulkForm.saleTo} 
+                  onValueChange={(value) => setBulkForm({...bulkForm, saleTo: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map((customer: Customer) => (
+                      <SelectItem key={customer._id} value={customer._id}>
+                        {customer.name} - {customer.mobile}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 

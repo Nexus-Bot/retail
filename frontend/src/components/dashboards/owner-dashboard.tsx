@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
 import { ItemStatus, User, UserRole } from "@/types/api";
-import { useOwnerDashboard } from "@/hooks/use-queries";
+import { useOwnerDashboard, useItemsSummary } from "@/hooks/use-queries";
 import { Loader2, Package, TrendingUp, Users, BarChart3, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -25,25 +25,36 @@ export function OwnerDashboard() {
   const router = useRouter();
   const { user } = useAuth();
 
-  // Fetch dashboard data using optimized hook
-  const { items: itemsQuery, users: usersQuery, isLoading } = useOwnerDashboard();
+  // Fetch dashboard data using optimized hooks
+  const { users: usersQuery, isLoading: isLoadingUsers } = useOwnerDashboard();
+  const { data: itemsSummaryData, isLoading: isLoadingSummary } = useItemsSummary();
   
-  const itemsData = itemsQuery.data;
   const usersData = usersQuery.data;
+  const summary = itemsSummaryData?.summary || [];
 
-  // Calculate stats from real data
-  const items = itemsData?.data?.data || [];
+  // Calculate stats from summary data (more efficient)
   const users = usersData?.data?.data || [];
   const employees = users.filter((u: User) => u.role === UserRole.EMPLOYEE);
 
+  // Calculate item counts from summary data
+  const totalItems = summary.reduce((acc, itemType) => acc + itemType.totalCount, 0);
+  const itemsWithEmployees = summary.reduce((acc, itemType) => {
+    const withEmployeesCount = itemType.statusCounts.find(sc => sc.status === ItemStatus.WITH_EMPLOYEE)?.count || 0;
+    return acc + withEmployeesCount;
+  }, 0);
+  const soldItems = summary.reduce((acc, itemType) => {
+    const soldCount = itemType.statusCounts.find(sc => sc.status === ItemStatus.SOLD)?.count || 0;
+    return acc + soldCount;
+  }, 0);
+
   const stats: OwnerStats = {
-    totalItems: items.length,
-    itemsWithEmployees: items.filter(
-      (item) => item.status === ItemStatus.WITH_EMPLOYEE
-    ).length,
-    soldItems: items.filter((item) => item.status === ItemStatus.SOLD).length,
+    totalItems,
+    itemsWithEmployees,
+    soldItems,
     employees: employees.length,
   };
+
+  const isLoading = isLoadingUsers || isLoadingSummary;
 
   return (
     <div className="p-4 space-y-6">
