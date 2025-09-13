@@ -390,6 +390,168 @@ export type CustomerResponse = BaseApiResponse<Customer>;
 export type CreateCustomerResponse = BaseApiResponse<Customer>;
 export type UpdateCustomerResponse = BaseApiResponse<Customer>;
 
+// Analytics Types
+export interface AnalyticsSummary {
+  totalRevenue: number;
+  totalQuantity: number;
+  averagePrice: number;
+  uniqueCustomersCount: number;
+}
+
+export interface AnalyticsTimeline {
+  _id: string; // Date string
+  revenue?: number;
+  quantity: number;
+  value?: number;
+  spent?: number;
+}
+
+export interface TopEmployee {
+  _id: string;
+  employee: { username: string };
+  revenue: number;
+  quantity: number;
+  sales?: number;
+}
+
+export interface TopCustomer {
+  _id: string;
+  customer: { name: string; mobile: string };
+  revenue: number;
+  quantity: number;
+}
+
+export interface ItemTypePerformance {
+  _id: string;
+  itemType: { name: string };
+  revenue: number;
+  quantity: number;
+}
+
+export interface SalesAnalytics {
+  summary: AnalyticsSummary;
+  timeline: AnalyticsTimeline[];
+  topEmployees: TopEmployee[];
+  topCustomers: TopCustomer[];
+  itemTypePerformance: ItemTypePerformance[];
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    employeeId?: string;
+    customerId?: string;
+    itemTypeId?: string;
+    groupBy: string;
+  };
+}
+
+export interface ReturnsAnalytics {
+  summary: {
+    totalReturns: number;
+    totalReturnValue: number;
+    averageReturnValue: number;
+    uniqueCustomersCount: number;
+  };
+  timeline: AnalyticsTimeline[];
+  employeeReturns: TopEmployee[];
+  customerReturns: TopCustomer[];
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    employeeId?: string;
+    customerId?: string;
+    itemTypeId?: string;
+    groupBy: string;
+  };
+}
+
+export interface EmployeeAnalytics {
+  employeeId: string;
+  sales: {
+    totalRevenue: number;
+    totalSales: number;
+    averagePrice: number;
+  };
+  salesTimeline: AnalyticsTimeline[];
+  returns: {
+    totalReturns: number;
+    totalReturnValue: number;
+  };
+  currentInventory: Array<{
+    _id: string;
+    itemType: { name: string };
+    quantity: number;
+  }>;
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    groupBy: string;
+  };
+}
+
+export interface CustomerAnalytics {
+  customerId: string;
+  summary: {
+    totalSpent: number;
+    totalPurchases: number;
+    averageOrderValue: number;
+  };
+  timeline: AnalyticsTimeline[];
+  favoriteProducts: Array<{
+    _id: string;
+    itemType: { name: string };
+    quantity: number;
+    totalSpent: number;
+  }>;
+  returns: {
+    totalReturns: number;
+    totalReturnValue: number;
+  };
+  filters: {
+    startDate?: string;
+    endDate?: string;
+    groupBy: string;
+  };
+}
+
+export interface DashboardAnalytics {
+  salesOverview: {
+    totalRevenue: number;
+    totalSales: number;
+    averageOrderValue: number;
+  };
+  inventoryStatus: Array<{
+    _id: string;
+    count: number;
+  }>;
+  recentActivity: Array<{
+    _id: string; // Date string
+    sales: number;
+    returns: number;
+    revenue: number;
+  }>;
+  topPerformers: TopEmployee[];
+  filters: {
+    startDate?: string;
+    endDate?: string;
+  };
+}
+
+export interface AnalyticsQuery {
+  startDate?: string;
+  endDate?: string;
+  employeeId?: string;
+  customerId?: string;
+  itemTypeId?: string;
+  groupBy?: 'day' | 'week' | 'month' | 'year';
+}
+
+// Analytics API Response Types
+export type SalesAnalyticsResponse = BaseApiResponse<SalesAnalytics>;
+export type ReturnsAnalyticsResponse = BaseApiResponse<ReturnsAnalytics>;
+export type EmployeeAnalyticsResponse = BaseApiResponse<EmployeeAnalytics>;
+export type CustomerAnalyticsResponse = BaseApiResponse<CustomerAnalytics>;
+export type DashboardAnalyticsResponse = BaseApiResponse<DashboardAnalytics>;
+
 // Item Summary Types
 export interface ItemStatusCount {
   status: ItemStatus;

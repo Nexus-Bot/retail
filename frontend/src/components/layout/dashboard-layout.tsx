@@ -67,7 +67,7 @@ const getNavigationForRole = (role: string): NavItem[] => {
       { name: "Routes", href: "/dashboard/routes", icon: Route },
       { name: "Customers", href: "/dashboard/customers", icon: UserCheck },
       { name: "Employees", href: "/dashboard/employees", icon: Users },
-      { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+      { name: "Analytics", href: "/dashboard/analytics/owner", icon: BarChart3 },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];
   }
@@ -77,6 +77,7 @@ const getNavigationForRole = (role: string): NavItem[] => {
       ...baseNavigation,
       { name: "My Items", href: "/dashboard/my-items", icon: ShoppingBag },
       { name: "Customers", href: "/dashboard/customers", icon: UserCheck },
+      { name: "Analytics", href: "/dashboard/analytics/employee", icon: BarChart3 },
       { name: "Settings", href: "/dashboard/settings", icon: Settings },
     ];
   }

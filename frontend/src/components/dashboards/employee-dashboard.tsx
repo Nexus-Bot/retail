@@ -11,7 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { ShoppingBag, Loader2, Settings } from "lucide-react";
+import { ShoppingBag, Loader2, Settings, BarChart3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMyItems } from "@/hooks/use-queries";
 import { ItemStatus } from "@/types/api";
@@ -109,6 +109,22 @@ export function EmployeeDashboard() {
               <CardDescription>
                 View and manage items currently in your care. Update item
                 status, mark as sold, and track your inventory.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/analytics/employee")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <BarChart3 className="mr-2 h-5 w-5" />
+                My Performance Analytics
+              </CardTitle>
+              <CardDescription>
+                View your personal sales performance, assigned inventory tracking,
+                and individual metrics dashboard.
               </CardDescription>
             </CardHeader>
           </Card>

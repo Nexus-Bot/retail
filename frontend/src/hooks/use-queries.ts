@@ -12,6 +12,7 @@ import {
   agenciesAPI,
   routesAPI,
   customersAPI,
+  analyticsAPI,
 } from '@/lib/api';
 import { 
   queryKeys, 
@@ -31,7 +32,8 @@ import type {
   CreateRouteRequest,
   UpdateRouteRequest,
   CreateCustomerRequest,
-  UpdateCustomerRequest
+  UpdateCustomerRequest,
+  AnalyticsQuery
 } from '@/types/api';
 
 // Item Types Hooks
@@ -356,4 +358,71 @@ export const useOwnerDashboard = () => {
     users: usersQuery,
     isLoading: itemsQuery.isLoading || usersQuery.isLoading,
   };
+};
+
+// Analytics Hooks
+export const useDashboardAnalytics = (filters?: { startDate?: string; endDate?: string }) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['analytics', 'dashboard', user?.agency?._id, filters],
+    queryFn: () => analyticsAPI.getDashboardAnalytics(filters),
+    enabled: !!user?.agency?._id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+export const useSalesAnalytics = (filters?: AnalyticsQuery) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['analytics', 'sales', user?.agency?._id, filters],
+    queryFn: () => analyticsAPI.getSalesAnalytics(filters),
+    enabled: !!user?.agency?._id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+export const useReturnsAnalytics = (filters?: AnalyticsQuery) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['analytics', 'returns', user?.agency?._id, filters],
+    queryFn: () => analyticsAPI.getReturnsAnalytics(filters),
+    enabled: !!user?.agency?._id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+export const useEmployeeAnalytics = (
+  employeeId: string, 
+  filters?: { startDate?: string; endDate?: string; groupBy?: string }
+) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['analytics', 'employee', employeeId, filters],
+    queryFn: () => analyticsAPI.getEmployeeAnalytics(employeeId, filters),
+    enabled: !!employeeId && !!user?.agency?._id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+export const useCustomerAnalytics = (
+  customerId: string, 
+  filters?: { startDate?: string; endDate?: string; groupBy?: string }
+) => {
+  const { user } = useAuth();
+  
+  return useQuery({
+    queryKey: ['analytics', 'customer', customerId, filters],
+    queryFn: () => analyticsAPI.getCustomerAnalytics(customerId, filters),
+    enabled: !!customerId && !!user?.agency?._id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
 };

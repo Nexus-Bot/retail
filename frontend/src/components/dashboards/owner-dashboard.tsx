@@ -185,7 +185,7 @@ export function OwnerDashboard() {
 
           <Card
             className="cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => router.push("/dashboard/analytics")}
+            onClick={() => router.push("/dashboard/analytics/owner")}
           >
             <CardHeader>
               <CardTitle className="text-base flex items-center">
