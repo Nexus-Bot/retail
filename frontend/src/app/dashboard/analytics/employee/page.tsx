@@ -12,6 +12,7 @@ import { UserRole } from '@/types/api';
 import { useAuth } from '@/contexts/auth-context';
 import { useEmployeeAnalytics, useSalesAnalytics, useReturnsAnalytics } from '@/hooks/use-queries';
 import { format, subDays, startOfMonth } from 'date-fns';
+import { formatTimelineDate, formatCurrency } from '@/lib/utils';
 
 function EmployeeAnalyticsContent() {
   const { user } = useAuth();
@@ -44,7 +45,6 @@ function EmployeeAnalyticsContent() {
   const error = employeeAnalyticsQuery.error || salesQuery.error || returnsQuery.error;
 
   const employeeData = employeeAnalyticsQuery.data?.data?.data;
-  const formatCurrency = (amount: number) => `₹${amount.toLocaleString()}`;
 
   const handleRefresh = () => {
     employeeAnalyticsQuery.refetch();
@@ -247,7 +247,7 @@ function EmployeeAnalyticsContent() {
                       <div key={index} className="flex items-center justify-between border-b pb-2">
                         <div>
                           <div className="font-medium">
-                            {format(new Date(entry._id), 'MMM dd, yyyy')}
+                            {formatTimelineDate(entry._id, groupBy)}
                           </div>
                           <div className="text-sm text-gray-500">
                             {entry.quantity} items

@@ -28,6 +28,7 @@ import {
 } from '@/hooks/use-queries';
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
+import { formatTimelineDate, formatCurrency } from '@/lib/utils';
 
 interface FilterState {
   startDate: Date | undefined;
@@ -88,8 +89,6 @@ function OwnerAnalyticsContent() {
   const salesData = salesQuery.data?.data.data;
   const returnsData = returnsQuery.data?.data.data;
 
-  // Format currency helper
-  const formatCurrency = (amount: number | undefined) => `₹${(amount || 0).toLocaleString()}`;
 
   // Reset filters
   const resetFilters = () => {
@@ -389,7 +388,7 @@ function OwnerAnalyticsContent() {
                   {dashboardData?.recentActivity.map((day) => (
                     <div key={day._id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center space-x-4">
-                        <div className="font-medium">{format(new Date(day._id), 'MMM dd')}</div>
+                        <div className="font-medium">{formatTimelineDate(day._id, filters.groupBy)}</div>
                         <div className="flex items-center space-x-4 text-sm text-gray-600">
                           <span className="flex items-center">
                             <ShoppingCart className="h-3 w-3 mr-1" />
@@ -511,7 +510,7 @@ function OwnerAnalyticsContent() {
                     {salesData?.timeline.map((period) => (
                       <div key={period._id} className="flex items-center justify-between p-2 border rounded">
                         <div>
-                          <div className="font-medium">{period._id}</div>
+                          <div className="font-medium">{formatTimelineDate(period._id, filters.groupBy)}</div>
                           <div className="text-sm text-gray-500">{period.quantity} items</div>
                         </div>
                         <div className="text-right">
@@ -625,7 +624,7 @@ function OwnerAnalyticsContent() {
                     {returnsData?.timeline.map((period) => (
                       <div key={period._id} className="flex items-center justify-between p-2 border rounded">
                         <div>
-                          <div className="font-medium">{period._id}</div>
+                          <div className="font-medium">{formatTimelineDate(period._id, filters.groupBy)}</div>
                           <div className="text-sm text-gray-500">{period.quantity} returns</div>
                         </div>
                         <div className="text-right">
