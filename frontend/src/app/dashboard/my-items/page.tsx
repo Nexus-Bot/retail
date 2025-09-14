@@ -17,7 +17,7 @@ import {
 import { ShoppingBag, Search, Edit, Loader2 } from "lucide-react";
 import { useItemTypes, useMyItemsSummary } from "@/hooks/use-queries";
 import { UserRole, ItemStatus, ItemTypeSummary } from "@/types/api";
-import { calculateItemGrouping, getGroupingBreakdown } from "@/lib/grouping-utils";
+import { getGroupingBreakdown } from "@/lib/grouping-utils";
 import { BulkUpdateItemsModal } from "./components/bulk-update-items-modal";
 import { ItemTypeDetailsModal } from "../items/components/item-type-details-modal";
 
@@ -211,20 +211,7 @@ function MyItemsContent() {
                       </TableCell>
                       <TableCell>
                         <div className="text-sm font-medium">
-                          {typeSummary.totalCount > 0 && itemType.grouping && itemType.grouping.length > 0 
-                            ? (() => {
-                                const grouping = calculateItemGrouping(typeSummary.totalCount, itemType.grouping);
-                                const groupsText = grouping.groups
-                                  .map(group => `${group.completeGroups} ${group.groupName.toLowerCase()}${group.completeGroups !== 1 ? 's' : ''}`)
-                                  .join(', ');
-                                const individualText = grouping.remainingIndividualItems > 0 
-                                  ? `${grouping.remainingIndividualItems} unit${grouping.remainingIndividualItems !== 1 ? 's' : ''}`
-                                  : '';
-                                const parts = [groupsText, individualText].filter(Boolean);
-                                return parts.join(', ') || typeSummary.totalCount.toString();
-                              })()
-                            : typeSummary.totalCount.toString()
-                          }
+                          {getGroupingBreakdown(typeSummary.totalCount, itemType.grouping || [])}
                         </div>
                       </TableCell>
                     </TableRow>

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Package, Plus, Search, Edit, Loader2 } from 'lucide-react';
 import { UserRole, ItemStatus, ItemTypeSummary } from '@/types/api';
 import { useItemTypes, useItemsSummary } from '@/hooks/use-queries';
-import { calculateItemGrouping, getGroupingBreakdown } from '@/lib/grouping-utils';
+import { getGroupingBreakdown } from '@/lib/grouping-utils';
 import { AddItemsModal } from './components/add-items-modal';
 import { BulkOperationsModal } from './components/bulk-operations-modal';
 import { ItemTypeDetailsModal } from './components/item-type-details-modal';
@@ -174,20 +174,7 @@ function ItemsManagementContent() {
                       </TableCell>
                       <TableCell>
                         <div className="font-medium text-sm">
-                          {typeSummary.totalCount > 0 && itemType.grouping && itemType.grouping.length > 0 
-                            ? (() => {
-                                const grouping = calculateItemGrouping(typeSummary.totalCount, itemType.grouping);
-                                const groupsText = grouping.groups
-                                  .map(group => `${group.completeGroups} ${group.groupName.toLowerCase()}${group.completeGroups !== 1 ? 's' : ''}`)
-                                  .join(', ');
-                                const individualText = grouping.remainingIndividualItems > 0 
-                                  ? `${grouping.remainingIndividualItems} unit${grouping.remainingIndividualItems !== 1 ? 's' : ''}`
-                                  : '';
-                                const parts = [groupsText, individualText].filter(Boolean);
-                                return parts.join(', ') || typeSummary.totalCount.toString();
-                              })()
-                            : typeSummary.totalCount.toString()
-                          }
+                          {getGroupingBreakdown(typeSummary.totalCount, itemType.grouping || [])}
                         </div>
                       </TableCell>
                     </TableRow>
