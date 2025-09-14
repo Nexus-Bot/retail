@@ -182,14 +182,8 @@ export const useCreateUserMutation = () => {
     mutationFn: (data: CreateUserRequest) => usersAPI.createUser(data),
     onSuccess: () => {
       // Invalidate all user-related queries efficiently
-      queryClient.invalidateQueries({ 
-        queryKey: ['users'],
-        exact: false 
-      });
-      // Invalidate dashboard data
-      queryClient.invalidateQueries({ 
-        queryKey: ['dashboard'],
-        exact: false 
+      invalidationPatterns.users.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
       });
     },
   });
@@ -203,14 +197,8 @@ export const useUpdateUserMutation = () => {
       usersAPI.updateUser(id, data),
     onSuccess: (_, variables) => {
       // Invalidate all user-related queries efficiently
-      queryClient.invalidateQueries({ 
-        queryKey: ['users'],
-        exact: false 
-      });
-      // Invalidate dashboard data
-      queryClient.invalidateQueries({ 
-        queryKey: ['dashboard'],
-        exact: false 
+      invalidationPatterns.users.forEach(pattern => {
+        queryClient.invalidateQueries({ queryKey: [pattern] });
       });
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.user(variables.id) 
@@ -343,7 +331,7 @@ export const useItemTypeAnalytics = (filters?: { startDate?: string; endDate?: s
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['analytics', 'item-types', user?.agency?._id, filters],
+    queryKey: queryKeys.analytics(user?.agency?._id, filters),
     queryFn: () => analyticsAPI.getItemTypeAnalytics(filters),
     enabled: !!user?.agency?._id,
     staleTime: 5 * 60 * 1000, // 5 minutes

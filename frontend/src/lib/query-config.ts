@@ -65,7 +65,10 @@ export const queryKeys = {
     ['customers', agencyId, filters].filter(Boolean),
   customer: (id: string) => ['customer', id],
 
-  // Dashboard data
+  // Analytics
+  analytics: (agencyId?: string, filters?: Record<string, any>) =>
+    ['analytics', agencyId, filters].filter(Boolean),
+
   // Health check
   health: () => ['health'],
 } as const;
@@ -108,20 +111,20 @@ export const createQueryOptions = {
 // Utility to invalidate related queries
 export const invalidationPatterns = {
   // When items are created/updated/deleted
-  items: ['items', 'items-summary', 'my-items', 'dashboard'],
+  items: ['items', 'items-summary', 'my-items', 'analytics'],
   
   // When item types are created/updated/deleted  
-  itemTypes: ['item-types', 'items', 'items-summary', 'dashboard'],
+  itemTypes: ['item-types', 'items', 'items-summary', 'analytics'],
   
   // When users are created/updated/deleted
-  users: ['users', 'dashboard'],
+  users: ['users', 'analytics'],
   
   // When agencies are created/updated/deleted
-  agencies: ['agencies', 'users', 'dashboard'],
+  agencies: ['agencies', 'users'],
 
   // When routes are created/updated/deleted
-  routes: ['routes', 'customers', 'dashboard'],
+  routes: ['routes', 'customers'],
   
   // When customers are created/updated/deleted
-  customers: ['customers', 'dashboard'],
+  customers: ['customers'],
 } as const;
