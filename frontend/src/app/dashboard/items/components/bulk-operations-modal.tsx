@@ -20,7 +20,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Loader2,
   ArrowRight,
@@ -270,100 +269,82 @@ export function BulkOperationsModal({
 
             {/* Current Status Summary */}
             {selectedItemType && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">
-                    Current Inventory Status
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                      <Package className="h-5 w-5 mx-auto text-blue-500" />
-                      <div className="font-bold text-blue-600">
-                        {getStatusGroupingBreakdown(ItemStatus.IN_INVENTORY)}
-                      </div>
-                      <div className="text-xs text-gray-600">Available</div>
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">
+                  Current Inventory Status
+                </h4>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="space-y-1">
+                    <Package className="h-4 w-4 mx-auto text-blue-500" />
+                    <div className="font-bold text-blue-600 text-sm">
+                      {getStatusGroupingBreakdown(ItemStatus.IN_INVENTORY)}
                     </div>
-                    <div className="space-y-1">
-                      <Users className="h-5 w-5 mx-auto text-yellow-500" />
-                      <div className="font-bold text-yellow-600">
-                        {getStatusGroupingBreakdown(ItemStatus.WITH_EMPLOYEE)}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        With Employees
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <CheckCircle className="h-5 w-5 mx-auto text-green-500" />
-                      <div className="font-bold text-green-600">
-                        {getStatusGroupingBreakdown(ItemStatus.SOLD)}
-                      </div>
-                      <div className="text-xs text-gray-600">Sold</div>
-                    </div>
+                    <div className="text-xs text-gray-600">Available</div>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="space-y-1">
+                    <Users className="h-4 w-4 mx-auto text-yellow-500" />
+                    <div className="font-bold text-yellow-600 text-sm">
+                      {getStatusGroupingBreakdown(ItemStatus.WITH_EMPLOYEE)}
+                    </div>
+                    <div className="text-xs text-gray-600">With Employees</div>
+                  </div>
+                  <div className="space-y-1">
+                    <CheckCircle className="h-4 w-4 mx-auto text-green-500" />
+                    <div className="font-bold text-green-600 text-sm">
+                      {getStatusGroupingBreakdown(ItemStatus.SOLD)}
+                    </div>
+                    <div className="text-xs text-gray-600">Sold</div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
           {/* Operation Type Selection */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             <Label>Choose Operation</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Card
-                className={`cursor-pointer transition-all ${
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button
+                className={`p-3 border rounded-lg text-left transition-all ${
                   operationType === "assign"
-                    ? "ring-2 ring-blue-500 bg-blue-50"
-                    : "hover:bg-gray-50"
+                    ? "border-blue-500 bg-blue-50 text-blue-900"
+                    : "border-gray-200 hover:bg-gray-50"
                 }`}
                 onClick={() => setOperationType("assign")}
               >
-                <CardContent className="p-4 flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center text-blue-600">
-                      <Package className="h-4 w-4 mr-1" />
-                      <ArrowRight className="h-3 w-3 mx-1" />
-                      <Users className="h-4 w-4" />
-                    </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center text-blue-600">
+                    <Package className="h-4 w-4 mr-1" />
+                    <ArrowRight className="h-3 w-3 mx-1" />
+                    <Users className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">
-                      Assign to Employee
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Inventory → Employee
-                    </div>
+                    <div className="font-medium text-sm">Assign to Employee</div>
+                    <div className="text-xs text-gray-500">Inventory → Employee</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </button>
 
-              <Card
-                className={`cursor-pointer transition-all ${
+              <button
+                className={`p-3 border rounded-lg text-left transition-all ${
                   operationType === "return_to_inventory"
-                    ? "ring-2 ring-orange-500 bg-orange-50"
-                    : "hover:bg-gray-50"
+                    ? "border-orange-500 bg-orange-50 text-orange-900"
+                    : "border-gray-200 hover:bg-gray-50"
                 }`}
                 onClick={() => setOperationType("return_to_inventory")}
               >
-                <CardContent className="p-4 flex items-center space-x-3">
-                  <div className="flex-shrink-0">
-                    <div className="flex items-center text-orange-600">
-                      <Users className="h-4 w-4 mr-1" />
-                      <ArrowRight className="h-3 w-3 mx-1" />
-                      <Package className="h-4 w-4" />
-                    </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center text-orange-600">
+                    <Users className="h-4 w-4 mr-1" />
+                    <ArrowRight className="h-3 w-3 mx-1" />
+                    <Package className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
-                    <div className="font-medium text-sm">
-                      Return to Inventory
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Employee → Inventory
-                    </div>
+                    <div className="font-medium text-sm">Return to Inventory</div>
+                    <div className="text-xs text-gray-500">Employee → Inventory</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </button>
             </div>
           </div>
 

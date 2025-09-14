@@ -5,7 +5,6 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -63,55 +62,49 @@ function AllCustomersContent() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "-" : customers.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Active customers</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Week</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading 
-                ? "-" 
-                : customers.filter((c: ApiCustomer) => {
-                    const createdDate = new Date(c.createdAt);
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    return createdDate > weekAgo;
-                  }).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Added this week</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unique Routes</CardTitle>
-            <Route className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading 
-                ? "-" 
-                : new Set(customers.map((c: ApiCustomer) => 
-                    typeof c.route === 'object' ? c.route._id : c.route
-                  )).size}
-            </div>
-            <p className="text-xs text-muted-foreground">Different routes</p>
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-gray-50 border rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Users className="h-4 w-4 text-gray-500 mr-1" />
+            <span className="text-xs font-medium text-gray-600">Total</span>
+          </div>
+          <div className="text-xl font-bold text-gray-900">
+            {loading ? "-" : customers.length}
+          </div>
+          <p className="text-xs text-gray-500">Customers</p>
+        </div>
+        <div className="bg-green-50 border rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Users className="h-4 w-4 text-green-500 mr-1" />
+            <span className="text-xs font-medium text-green-600">New</span>
+          </div>
+          <div className="text-xl font-bold text-green-900">
+            {loading 
+              ? "-" 
+              : customers.filter((c: ApiCustomer) => {
+                  const createdDate = new Date(c.createdAt);
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return createdDate > weekAgo;
+                }).length}
+          </div>
+          <p className="text-xs text-green-600">This week</p>
+        </div>
+        <div className="bg-blue-50 border rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Route className="h-4 w-4 text-blue-500 mr-1" />
+            <span className="text-xs font-medium text-blue-600">Routes</span>
+          </div>
+          <div className="text-xl font-bold text-blue-900">
+            {loading 
+              ? "-" 
+              : new Set(customers.map((c: ApiCustomer) => 
+                  typeof c.route === 'object' ? c.route._id : c.route
+                )).size}
+          </div>
+          <p className="text-xs text-blue-600">Unique</p>
+        </div>
       </div>
 
       {/* Search */}

@@ -5,7 +5,6 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -62,39 +61,35 @@ function AllRoutesContent() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Routes</CardTitle>
-            <Route className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "-" : routes.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Active routes</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Routes</CardTitle>
-            <Route className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading 
-                ? "-" 
-                : routes.filter((r: ApiRoute) => {
-                    const createdDate = new Date(r.createdAt);
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-                    return createdDate > weekAgo;
-                  }).length}
-            </div>
-            <p className="text-xs text-muted-foreground">Created this week</p>
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-gray-50 border rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Route className="h-4 w-4 text-gray-500 mr-1" />
+            <span className="text-xs font-medium text-gray-600">Total</span>
+          </div>
+          <div className="text-xl font-bold text-gray-900">
+            {loading ? "-" : routes.length}
+          </div>
+          <p className="text-xs text-gray-500">Active routes</p>
+        </div>
+        <div className="bg-blue-50 border rounded-lg p-3 text-center">
+          <div className="flex items-center justify-center mb-1">
+            <Route className="h-4 w-4 text-blue-500 mr-1" />
+            <span className="text-xs font-medium text-blue-600">Recent</span>
+          </div>
+          <div className="text-xl font-bold text-blue-900">
+            {loading 
+              ? "-" 
+              : routes.filter((r: ApiRoute) => {
+                  const createdDate = new Date(r.createdAt);
+                  const weekAgo = new Date();
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  return createdDate > weekAgo;
+                }).length}
+          </div>
+          <p className="text-xs text-blue-600">This week</p>
+        </div>
       </div>
 
       {/* Search */}
