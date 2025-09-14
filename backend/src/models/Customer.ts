@@ -58,4 +58,8 @@ customerSchema.index({ name: 'text', mobile: 'text' });
 // Index for efficient route-based queries
 customerSchema.index({ route: 1, agency: 1 });
 
+// Additional optimized indexes for common queries
+customerSchema.index({ agency: 1, createdAt: -1 }); // Recent customers by agency
+customerSchema.index({ createdBy: 1, createdAt: -1 }); // User activity tracking
+
 export const Customer = model<ICustomer>('Customer', customerSchema);

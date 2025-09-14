@@ -36,4 +36,8 @@ routeSchema.index({ name: 1, agency: 1 }, { unique: true });
 // Add text index for search functionality
 routeSchema.index({ name: 'text' });
 
+// Additional indexes for common queries
+routeSchema.index({ agency: 1, createdAt: -1 }); // Recent routes by agency
+routeSchema.index({ createdBy: 1, createdAt: -1 }); // User activity tracking
+
 export const Route = model<IRoute>('Route', routeSchema);

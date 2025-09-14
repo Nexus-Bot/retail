@@ -74,16 +74,36 @@ const itemSchema = new mongoose.Schema(
 
 
 
-// Indexes for efficient queries
-itemSchema.index({ agency: 1, status: 1 });              // Primary filtering (most common)
-itemSchema.index({ currentHolder: 1 });                  // Employee items lookup
-itemSchema.index({ itemType: 1 });                       // Type-based queries
-itemSchema.index({ createdAt: -1 });                     // Recent items sorting
-itemSchema.index({ status: 1, itemType: 1 });           // Status + type queries  
-itemSchema.index({ agency: 1, itemType: 1, status: 1 }); // Complex filtering
-itemSchema.index({ createdBy: 1 });
-itemSchema.index({ saleDate: -1, agency: 1 });          // Sales analytics by date
-itemSchema.index({ returnDate: -1, agency: 1 });        // Return analytics by date
-itemSchema.index({ saleTo: 1 });                         // Customer-based sales queries
+// Optimized indexes for efficient queries - based on common query patterns
+
+// 1. Primary filtering - most common query pattern (agency + status + itemType)
+itemSchema.index({ agency: 1, status: 1, itemType: 1 });
+
+// 2. Employee items lookup with status filtering
+itemSchema.index({ currentHolder: 1, status: 1 });
+
+// 3. Analytics queries - sales by date range
+itemSchema.index({ agency: 1, status: 1, saleDate: -1 });
+
+// 4. Analytics queries - returns by date range  
+itemSchema.index({ agency: 1, status: 1, returnDate: -1 });
+
+// 5. Revenue analytics - sellPrice with date filtering
+itemSchema.index({ sellPrice: 1, saleDate: -1, agency: 1 });
+
+// 6. Recent items by type (inventory management)
+itemSchema.index({ agency: 1, itemType: 1, createdAt: -1 });
+
+// 7. Complex filtering for getItems() endpoint
+itemSchema.index({ agency: 1, status: 1, itemType: 1, currentHolder: 1 });
+
+// 8. Customer sales history
+itemSchema.index({ saleTo: 1, saleDate: -1 });
+
+// 9. User activity tracking
+itemSchema.index({ createdBy: 1, createdAt: -1 });
+
+// 10. Analytics aggregation support - itemType with status and dates
+itemSchema.index({ itemType: 1, agency: 1, status: 1, saleDate: -1 });
 
 export default mongoose.model<IItem>("Item", itemSchema);

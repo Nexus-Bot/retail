@@ -76,7 +76,7 @@ itemTypeSchema.methods.getGroupingByName = function(groupName: string): IGroupin
 itemTypeSchema.index({ agency: 1, isActive: 1 });           // Primary filtering
 itemTypeSchema.index({ name: 1, agency: 1 }, { unique: true }); // Unique name per agency
 itemTypeSchema.index({ isActive: 1, name: 1 });             // Search with status filter
-itemTypeSchema.index({ createdAt: -1 });                    // Recent items sorting
-itemTypeSchema.index({ createdBy: 1 });
+itemTypeSchema.index({ agency: 1, createdAt: -1 });         // Recent item types by agency
+itemTypeSchema.index({ createdBy: 1, createdAt: -1 });      // User activity tracking
 
 export default mongoose.model<IItemType>('ItemType', itemTypeSchema);
