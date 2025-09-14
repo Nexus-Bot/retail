@@ -10,7 +10,7 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { User, UserRole } from "@/types/api";
 import { useOwnerDashboard } from "@/hooks/use-queries";
-import { Package, Users, BarChart3, Settings } from "lucide-react";
+import { Package, Users, BarChart3, Settings, Route, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function OwnerDashboard() {
@@ -75,6 +75,36 @@ export function OwnerDashboard() {
               </CardTitle>
               <CardDescription>
                 Create and manage product definitions. Define item categories, groupings, and specifications.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/routes")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <Route className="mr-2 h-5 w-5" />
+                Routes
+              </CardTitle>
+              <CardDescription>
+                Manage delivery routes and territories. Organize customer locations and optimize distribution paths.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => router.push("/dashboard/customers")}
+          >
+            <CardHeader>
+              <CardTitle className="text-base flex items-center">
+                <UserCheck className="mr-2 h-5 w-5" />
+                Customers
+              </CardTitle>
+              <CardDescription>
+                Manage customer database and relationships. Track customer information, purchase history, and routes.
               </CardDescription>
             </CardHeader>
           </Card>
