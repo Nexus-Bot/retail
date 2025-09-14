@@ -84,31 +84,37 @@ export function AnalyticsTable({
   const exportData = () => {
     if (!analytics?.data?.data) return;
     
-    // Create CSV content
+    // Create CSV content with grouping breakdowns and rounded revenue
     const headers = ['Item Type', 'Sales', 'Sales Revenue (₹)', 'Returns', 'Returns Revenue (₹)'];
-    const rows = analytics.data.data.itemTypes.map((item: any) => [
-      item.itemTypeName,
-      item.salesCount.toString(),
-      (item.salesRevenue || 0).toString(),
-      item.returnsCount.toString(),
-      (item.returnsRevenue || 0).toString()
-    ]);
+    const rows = analytics.data.data.itemTypes.map((item: any, index: any) => {
+      const groupingData = itemGroupings[index];
+      return [
+        item.itemTypeName,
+        groupingData?.salesDisplay || item.salesCount.toString(),
+        (item.salesRevenue || 0).toFixed(2),
+        groupingData?.returnsDisplay || item.returnsCount.toString(),
+        (item.returnsRevenue || 0).toFixed(2)
+      ];
+    });
     
     // Add totals row
     rows.push([
       'TOTAL',
-      analytics.data.data?.totals.totalSales.toString() || '0',
-      (analytics.data.data?.totals.totalSalesRevenue || 0).toString(),
-      analytics.data.data?.totals.totalReturns.toString() || '0',
-      (analytics.data.data?.totals.totalReturnsRevenue || 0).toString()
+      '', // Keep sales total empty as it's mixed groupings
+      (analytics.data.data?.totals.totalSalesRevenue || 0).toFixed(2),
+      '', // Keep returns total empty as it's mixed groupings  
+      (analytics.data.data?.totals.totalReturnsRevenue || 0).toFixed(2)
     ]);
     
     const csvContent = [headers, ...rows]
       .map(row => row.map((cell: any) => `"${cell}"`).join(','))
       .join('\n');
     
-    // Create filename with filters
-    let filename = `analytics-${format(new Date(), 'yyyy-MM-dd')}`;
+    // Create filename with date range and filters
+    const startDateStr = filters.startDate ? format(filters.startDate, 'yyyy-MM-dd') : 'start';
+    const endDateStr = filters.endDate ? format(filters.endDate, 'yyyy-MM-dd') : 'end';
+    let filename = `analytics-${startDateStr}-to-${endDateStr}`;
+    
     if (filters.employeeId !== 'all') {
       const selectedEmployee = employees.find(emp => emp._id === filters.employeeId);
       if (selectedEmployee) {
@@ -306,7 +312,7 @@ export function AnalyticsTable({
                         </td>
                         <td className="py-3 px-2 text-center">
                           <Badge variant="outline" className="text-green-600 border-green-200">
-                            ₹{item.salesRevenue?.toLocaleString() || '0'}
+                            ₹{(item.salesRevenue || 0).toFixed(2)}
                           </Badge>
                         </td>
                         <td className="py-3 px-2 text-center">
