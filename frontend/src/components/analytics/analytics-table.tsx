@@ -8,8 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Calendar,
   Download,
-  TrendingUp,
-  TrendingDown,
   BarChart3,
   Users
 } from 'lucide-react';
@@ -17,12 +15,7 @@ import { useItemTypeAnalytics, useUsers } from '@/hooks/use-queries';
 import { UserRole } from '@/types/api';
 import { format } from 'date-fns';
 import { DatePicker } from '@/components/ui/date-picker';
-import { 
-  calculateItemGrouping,
-  formatGroupingDisplay,
-  formatCompactGroupingDisplay,
-  getGroupingTooltip
-} from '@/lib/grouping-utils';
+import { getGroupingBreakdown } from '@/lib/grouping-utils';
 import { useMemo } from 'react';
 
 interface AnalyticsTableProps {
@@ -134,6 +127,7 @@ export function AnalyticsTable({
     window.URL.revokeObjectURL(url);
   };
 
+
   // Calculate groupings for all items using useMemo
   const itemGroupings = useMemo(() => {
     if (!analytics?.data?.data?.itemTypes) return [];
@@ -141,20 +135,9 @@ export function AnalyticsTable({
     return analytics.data.data.itemTypes.map((item: any) => {
       const groupings = item.grouping || [];
       return {
-        salesGrouping: {
-          grouping: calculateItemGrouping(item.salesCount, groupings),
-          display: formatGroupingDisplay(calculateItemGrouping(item.salesCount, groupings)),
-          compactDisplay: formatCompactGroupingDisplay(calculateItemGrouping(item.salesCount, groupings)),
-          tooltip: getGroupingTooltip(calculateItemGrouping(item.salesCount, groupings)),
-          hasGrouping: groupings.length > 0
-        },
-        returnsGrouping: {
-          grouping: calculateItemGrouping(item.returnsCount, groupings),
-          display: formatGroupingDisplay(calculateItemGrouping(item.returnsCount, groupings)),
-          compactDisplay: formatCompactGroupingDisplay(calculateItemGrouping(item.returnsCount, groupings)),
-          tooltip: getGroupingTooltip(calculateItemGrouping(item.returnsCount, groupings)),
-          hasGrouping: groupings.length > 0
-        }
+        salesDisplay: getGroupingBreakdown(item.salesCount, groupings),
+        returnsDisplay: getGroupingBreakdown(item.returnsCount, groupings),
+        hasGrouping: groupings.length > 0
       };
     });
   }, [analytics?.data?.data?.itemTypes]);
@@ -311,55 +294,30 @@ export function AnalyticsTable({
                 </thead>
                 <tbody>
                   {analytics?.data?.data?.itemTypes.map((item: any, index: any) => {
-                    const salesGrouping = itemGroupings[index]?.salesGrouping;
-                    const returnsGrouping = itemGroupings[index]?.returnsGrouping;
+                    const groupingData = itemGroupings[index];
                     
                     return (
                       <tr key={item._id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                         <td className="py-3 px-2 font-medium">{item.itemTypeName}</td>
                         <td className="py-3 px-2 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <Badge variant="outline" className="text-green-600 border-green-200">
-                              {item.salesCount}
-                            </Badge>
-                            {salesGrouping?.hasGrouping && (
-                              <div className="text-xs text-gray-600">
-                                {salesGrouping.compactDisplay}
-                              </div>
-                            )}
+                          <div className="text-sm text-green-700 bg-green-50 rounded px-2 py-1 inline-block">
+                            {groupingData?.salesDisplay || item.salesCount.toString()}
                           </div>
                         </td>
                         <td className="py-3 px-2 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <Badge variant="outline" className="text-green-600 border-green-200">
-                              ₹{item.salesRevenue?.toLocaleString() || '0'}
-                            </Badge>
-                            <div className="text-xs text-gray-600">
-                              Revenue
-                            </div>
+                          <Badge variant="outline" className="text-green-600 border-green-200">
+                            ₹{item.salesRevenue?.toLocaleString() || '0'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <div className="text-sm text-red-700 bg-red-50 rounded px-2 py-1 inline-block">
+                            {groupingData?.returnsDisplay || item.returnsCount.toString()}
                           </div>
                         </td>
                         <td className="py-3 px-2 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <Badge variant="outline" className="text-red-600 border-red-200">
-                              {item.returnsCount}
-                            </Badge>
-                            {returnsGrouping?.hasGrouping && (
-                              <div className="text-xs text-gray-600">
-                                {returnsGrouping.compactDisplay}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <div className="flex flex-col items-center gap-1">
-                            <Badge variant="outline" className="text-red-600 border-red-200">
-                              ₹{item.returnsRevenue?.toLocaleString() || '0'}
-                            </Badge>
-                            <div className="text-xs text-gray-600">
-                              Lost Revenue
-                            </div>
-                          </div>
+                          <Badge variant="outline" className="text-red-600 border-red-200">
+                            ₹{item.returnsRevenue?.toLocaleString() || '0'}
+                          </Badge>
                         </td>
                       </tr>
                     );
@@ -370,44 +328,20 @@ export function AnalyticsTable({
                     <tr>
                       <td className="py-3 px-2 font-bold">TOTAL</td>
                       <td className="py-3 px-2 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge className="bg-green-600">
-                            {analytics.data.data?.totals.totalSales}
-                          </Badge>
-                          <span className="text-xs text-gray-500 font-medium">
-                            {analytics.data.data?.totals.totalSales} items
-                          </span>
-                        </div>
+                        {/* Keep blank */}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge className="bg-green-600">
-                            ₹{analytics.data.data?.totals.totalSalesRevenue?.toLocaleString() || '0'}
-                          </Badge>
-                          <span className="text-xs text-gray-500 font-medium">
-                            Total Revenue
-                          </span>
-                        </div>
+                        <Badge className="bg-green-600">
+                          ₹{analytics.data.data?.totals.totalSalesRevenue?.toLocaleString() || '0'}
+                        </Badge>
                       </td>
                       <td className="py-3 px-2 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge className="bg-red-600">
-                            {analytics.data.data?.totals.totalReturns}
-                          </Badge>
-                          <span className="text-xs text-gray-500 font-medium">
-                            {analytics.data.data?.totals.totalReturns} items
-                          </span>
-                        </div>
+                        {/* Keep blank */}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        <div className="flex flex-col items-center gap-1">
-                          <Badge className="bg-red-600">
-                            ₹{analytics.data.data?.totals.totalReturnsRevenue?.toLocaleString() || '0'}
-                          </Badge>
-                          <span className="text-xs text-gray-500 font-medium">
-                            Lost Revenue
-                          </span>
-                        </div>
+                        <Badge className="bg-red-600">
+                          ₹{analytics.data.data?.totals.totalReturnsRevenue?.toLocaleString() || '0'}
+                        </Badge>
                       </td>
                     </tr>
                   </tfoot>
@@ -417,50 +351,25 @@ export function AnalyticsTable({
           )}
       </div>
 
-      {/* Bottom Summary */}
+      {/* Bottom Summary - Net Revenue Only */}
       {analytics?.data?.data && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-2 text-center">
-            <div className="flex items-center justify-center mb-1">
-              <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-              <span className="text-xs font-medium text-green-700">Total Sales</span>
+        <div className="flex justify-center">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center min-w-[200px]">
+            <div className="flex items-center justify-center mb-2">
+              <Users className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm font-medium text-blue-700">Net Revenue</span>
             </div>
-            <div className="text-lg font-bold text-green-600">
-              {analytics.data.data?.totals.totalSales}
-            </div>
-            {showEmployeeSelector && filters.employeeId !== 'all' && (
-              <div className="text-xs text-green-600 mt-1">
-                {getSelectedEmployeeName()}
-              </div>
-            )}
-          </div>
-          
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-center">
-            <div className="flex items-center justify-center mb-1">
-              <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
-              <span className="text-xs font-medium text-red-700">Total Returns</span>
-            </div>
-            <div className="text-lg font-bold text-red-600">
-              {analytics.data.data?.totals.totalReturns}
-            </div>
-            {showEmployeeSelector && filters.employeeId !== 'all' && (
-              <div className="text-xs text-red-600 mt-1">
-                {getSelectedEmployeeName()}
-              </div>
-            )}
-          </div>
-          
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center">
-            <div className="flex items-center justify-center mb-1">
-              <Users className="h-4 w-4 text-blue-600 mr-1" />
-              <span className="text-xs font-medium text-blue-700">Net Revenue</span>
-            </div>
-            <div className="text-lg font-bold text-blue-600">
+            <div className="text-2xl font-bold text-blue-600">
               ₹{((analytics.data.data?.totals.totalSalesRevenue || 0) - (analytics.data.data?.totals.totalReturnsRevenue || 0)).toLocaleString()}
             </div>
             <div className="text-xs text-blue-600 mt-1">
               sales - returns revenue
             </div>
+            {showEmployeeSelector && filters.employeeId !== 'all' && (
+              <div className="text-xs text-blue-600 mt-2 font-medium">
+                {getSelectedEmployeeName()}
+              </div>
+            )}
           </div>
         </div>
       )}

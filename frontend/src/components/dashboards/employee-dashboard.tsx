@@ -3,33 +3,18 @@
 import React from "react";
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { ShoppingBag, Settings, BarChart3, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMyItems } from "@/hooks/use-queries";
-import { ItemStatus } from "@/types/api";
 
 export function EmployeeDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-
-  const {
-    data: myItemsData,
-    error,
-    refetch: refetchStats,
-  } = useMyItems({
-    limit: 1000,
-    status: ItemStatus.WITH_EMPLOYEE,
-  });
-
-  const myItemsCount = myItemsData?.data?.data?.length || 0;
 
   return (
     <div className="p-4 space-y-6">
@@ -48,25 +33,6 @@ export function EmployeeDashboard() {
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">
-              <p>{error?.message || "An error occurred"}</p>
-              <Button
-                variant="outline"
-                onClick={() => refetchStats()}
-                className="mt-2"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-
       {/* Employee Tools */}
       <div className="space-y-4">
         <h2 className="text-lg font-semibold text-gray-900">Employee Tools</h2>
@@ -79,7 +45,7 @@ export function EmployeeDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <ShoppingBag className="mr-2 h-5 w-5" />
-                My Items ({myItemsCount})
+                My Items
               </CardTitle>
               <CardDescription>
                 View and manage items currently in your care. Update item
@@ -98,7 +64,8 @@ export function EmployeeDashboard() {
                 Customers
               </CardTitle>
               <CardDescription>
-                Access customer information for sales and transactions. View customer details and purchase history.
+                Access customer information for sales and transactions. View
+                customer details and purchase history.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -113,8 +80,8 @@ export function EmployeeDashboard() {
                 My Performance Analytics
               </CardTitle>
               <CardDescription>
-                View your personal sales performance, assigned inventory tracking,
-                and individual metrics dashboard.
+                View your personal sales performance, assigned inventory
+                tracking, and individual metrics dashboard.
               </CardDescription>
             </CardHeader>
           </Card>

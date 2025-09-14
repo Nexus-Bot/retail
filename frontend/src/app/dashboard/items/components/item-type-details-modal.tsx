@@ -3,7 +3,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Users, CheckCircle, Loader2 } from 'lucide-react';
 import { ItemType, ItemStatus, ItemTypeSummary } from '@/types/api';
 
@@ -133,232 +132,294 @@ export function ItemTypeDetailsModal({
             <span className="ml-2">Loading details...</span>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Item Type Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Item Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <span className="font-medium">Name: </span>
-                  {itemType.name}
-                </div>
-                {itemType.description && (
-                  <div>
-                    <span className="font-medium">Description: </span>
-                    {itemType.description}
+          <div className="space-y-4">
+            {/* Item Type Info - Simplified */}
+            <div className="border-b pb-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-600">
+                    {itemType.description || 'No description'}
                   </div>
-                )}
-                <div>
-                  <span className="font-medium">Status: </span>
-                  <Badge variant={itemType.isActive ? "default" : "secondary"}>
-                    {itemType.isActive ? "Active" : "Inactive"}
-                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Inventory Status Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalItems}</div>
-                  <p className="text-xs text-muted-foreground">All units</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Available</CardTitle>
-                  <Package className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{availableCount}</div>
-                  <p className="text-xs text-muted-foreground">In inventory</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">With Employees</CardTitle>
-                  <Users className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">{withEmployeeCount}</div>
-                  <p className="text-xs text-muted-foreground">Assigned</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Sold</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{soldCount}</div>
-                  <p className="text-xs text-muted-foreground">Completed</p>
-                </CardContent>
-              </Card>
+                <Badge variant={itemType.isActive ? "default" : "secondary"}>
+                  {itemType.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </div>
             </div>
 
-            {/* Grouping Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Inventory Breakdown by Status</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {!groupingData.hasGrouping ? (
-                  <div className="text-center py-6 text-gray-500">
-                    <Package className="mx-auto h-12 w-12 text-gray-400 mb-2" />
-                    <p className="font-medium">No Grouping Configured</p>
-                    <p className="text-sm">Items are managed individually without grouping</p>
+            {/* Employee-Centric Inventory Breakdown */}
+            <div>
+              <h3 className="font-semibold text-lg mb-4">Employee Inventory Breakdown</h3>
+              {!groupingData.hasGrouping ? (
+                <div className="text-center py-6 text-gray-500">
+                  <Package className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                  <p className="font-medium">No Grouping Configured</p>
+                  <p className="text-sm">Items are managed individually without grouping</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="text-sm text-gray-600 mb-3">
+                    {totalItems} items breakdown by employee and status:
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="text-sm text-gray-600 mb-4">
-                      Here's how your {totalItems} items break down by status and grouping:
-                    </div>
-                    
-                    {groupingData.statusBreakdowns.map((statusInfo, statusIndex) => (
-                      <div key={statusIndex} className={`border rounded-lg p-4 ${statusInfo.bgColor} ${statusInfo.borderColor}`}>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="font-medium text-lg flex items-center gap-2">
-                            {statusInfo.status === ItemStatus.IN_INVENTORY && <Package className="h-5 w-5 text-blue-600" />}
-                            {statusInfo.status === ItemStatus.WITH_EMPLOYEE && <Users className="h-5 w-5 text-yellow-600" />}
-                            {statusInfo.status === ItemStatus.SOLD && <CheckCircle className="h-5 w-5 text-green-600" />}
-                            {statusInfo.label}
-                          </h4>
-                          <Badge variant="outline" className="font-medium">
-                            {statusInfo.count} items total
-                          </Badge>
-                        </div>
+                  
+                  {/* Available Inventory (Not with employees) */}
+                  {availableCount > 0 && (
+                    <div className="border rounded-lg p-3 bg-blue-50 border-blue-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium flex items-center gap-2">
+                          <Package className="h-4 w-4 text-blue-600" />
+                          Available Inventory
+                        </h4>
+                        <Badge variant="outline" className="text-sm">
+                          {availableCount} items
+                        </Badge>
+                      </div>
+                      
+                      {(() => {
+                        const availableStatus = groupingData.statusBreakdowns.find(s => s.status === ItemStatus.IN_INVENTORY);
+                        if (!availableStatus) return null;
                         
-                        {/* Employee Breakdown for WITH_EMPLOYEE and SOLD statuses */}
-                        {(statusInfo.status === ItemStatus.WITH_EMPLOYEE || statusInfo.status === ItemStatus.SOLD) && summary && (
-                          <div className="mb-4">
-                            {(() => {
-                              const statusCount = summary.statusCounts.find(s => s.status === statusInfo.status);
-                              const employeeBreakdown = statusCount?.employeeBreakdown || [];
-                              
-                              if (employeeBreakdown.length > 0) {
-                                return (
-                                  <div className="bg-white border rounded-lg p-4">
-                                    <h5 className="font-medium text-sm text-gray-700 mb-3">
-                                      {statusInfo.status === ItemStatus.WITH_EMPLOYEE ? 'Employee Distribution' : 'Sales by Employee'}
-                                    </h5>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                      {employeeBreakdown.map((employee) => (
-                                        <div key={employee.employeeId} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                                          <span className="font-medium text-sm">{employee.employeeName}</span>
-                                          <Badge variant="outline" className="text-xs">
-                                            {employee.count} items
-                                          </Badge>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </div>
-                        )}
-
-                        {statusInfo.groupBreakdown.length === 0 && statusInfo.remainingIndividualItems > 0 ? (
-                          <div className="bg-white p-4 rounded border">
-                            <div className="text-center">
-                              <div className="font-medium text-xl text-gray-600">
-                                {statusInfo.remainingIndividualItems}
-                              </div>
-                              <div className="text-gray-500">Individual items only</div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                Not enough items to form any complete groups
-                              </div>
+                        return availableStatus.groupBreakdown.length === 0 && availableStatus.remainingIndividualItems > 0 ? (
+                          <div className="bg-white p-3 rounded border text-center">
+                            <div className="font-medium text-lg text-gray-600">
+                              {availableStatus.remainingIndividualItems} individual items
+                            </div>
+                            <div className="text-xs text-gray-400 mt-1">
+                              Not enough items to form complete groups
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-3">
-                            {statusInfo.groupBreakdown.map((group, groupIndex) => (
-                              <div key={groupIndex} className="bg-white p-4 rounded border">
+                          <div className="space-y-2">
+                            {availableStatus.groupBreakdown.map((group, groupIndex) => (
+                              <div key={groupIndex} className="bg-white p-3 rounded border">
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium">{group.groupName}</span>
+                                  <span className="font-medium text-sm">{group.groupName}</span>
                                   <Badge variant="outline" className="text-xs">
-                                    {group.unitsPerGroup} units per {group.groupName.toLowerCase()}
+                                    {group.unitsPerGroup} units each
                                   </Badge>
                                 </div>
-                                <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-3 text-sm">
                                   <div className="text-center">
-                                    <div className={`font-bold text-xl text-${statusInfo.color}-600`}>
+                                    <div className="font-bold text-lg text-blue-600">
                                       {group.completeGroups}
                                     </div>
-                                    <div className="text-gray-600">
+                                    <div className="text-xs text-gray-600">
                                       {group.groupName.toLowerCase()}{group.completeGroups !== 1 ? 's' : ''}
                                     </div>
                                   </div>
                                   <div className="text-gray-400">×</div>
                                   <div className="text-center">
-                                    <div className="font-medium text-gray-600">
-                                      {group.unitsPerGroup}
-                                    </div>
-                                    <div className="text-xs text-gray-500">units each</div>
+                                    <div className="font-medium text-gray-600">{group.unitsPerGroup}</div>
+                                    <div className="text-xs text-gray-500">units</div>
                                   </div>
                                   <div className="text-gray-400">=</div>
                                   <div className="text-center">
-                                    <div className="font-medium text-gray-800">
-                                      {group.unitsUsed}
-                                    </div>
-                                    <div className="text-xs text-gray-500">total units</div>
+                                    <div className="font-medium text-gray-800">{group.unitsUsed}</div>
+                                    <div className="text-xs text-gray-500">total</div>
                                   </div>
                                 </div>
                               </div>
                             ))}
                             
-                            {statusInfo.remainingIndividualItems > 0 && (
-                              <div className="bg-white p-4 rounded border border-orange-200">
-                                <div className="flex items-center gap-2">
-                                  <div className="text-center">
-                                    <div className="font-bold text-xl text-orange-600">
-                                      {statusInfo.remainingIndividualItems}
-                                    </div>
-                                    <div className="text-gray-600">Individual items</div>
-                                    <div className="text-xs text-gray-500">
-                                      Not enough to form a complete group
-                                    </div>
-                                  </div>
+                            {availableStatus.remainingIndividualItems > 0 && (
+                              <div className="bg-white p-3 rounded border border-orange-200 text-center">
+                                <div className="font-bold text-lg text-orange-600">
+                                  {availableStatus.remainingIndividualItems}
                                 </div>
+                                <div className="text-sm text-gray-600">Individual items</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Employee Breakdown */}
+                  {summary && (() => {
+                    // Get all unique employees from both WITH_EMPLOYEE and SOLD statuses
+                    const withEmployeeStatus = summary.statusCounts.find(s => s.status === ItemStatus.WITH_EMPLOYEE);
+                    const soldStatus = summary.statusCounts.find(s => s.status === ItemStatus.SOLD);
+                    
+                    const allEmployees = new Map<string, { employeeId: string; employeeName: string; withEmployee: number; sold: number }>();
+                    
+                    // Add employees with items
+                    (withEmployeeStatus?.employeeBreakdown || []).forEach(emp => {
+                      allEmployees.set(emp.employeeId, {
+                        employeeId: emp.employeeId,
+                        employeeName: emp.employeeName,
+                        withEmployee: emp.count,
+                        sold: 0
+                      });
+                    });
+                    
+                    // Add employees with sales
+                    (soldStatus?.employeeBreakdown || []).forEach(emp => {
+                      const existing = allEmployees.get(emp.employeeId);
+                      if (existing) {
+                        existing.sold = emp.count;
+                      } else {
+                        allEmployees.set(emp.employeeId, {
+                          employeeId: emp.employeeId,
+                          employeeName: emp.employeeName,
+                          withEmployee: 0,
+                          sold: emp.count
+                        });
+                      }
+                    });
+
+                    const employeeList = Array.from(allEmployees.values());
+                    
+                    if (employeeList.length === 0) return null;
+
+                    return employeeList.map((employee) => {
+                      const totalForEmployee = employee.withEmployee + employee.sold;
+                      
+                      return (
+                        <div key={employee.employeeId} className="border rounded-lg p-3 bg-gray-50 border-gray-200">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-medium flex items-center gap-2">
+                              <Users className="h-4 w-4 text-gray-600" />
+                              {employee.employeeName}
+                            </h4>
+                            <Badge variant="outline" className="text-sm">
+                              {totalForEmployee} total items
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {/* Items with employee */}
+                            {employee.withEmployee > 0 && (
+                              <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-sm text-yellow-800 flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    Currently With Employee
+                                  </span>
+                                  <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-700">
+                                    {employee.withEmployee} items
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  const withEmployeeGrouping = groupingData.statusBreakdowns.find(s => s.status === ItemStatus.WITH_EMPLOYEE);
+                                  
+                                  if (!withEmployeeGrouping) return null;
+                                  
+                                  // Calculate proportional grouping for this employee
+                                  const employeeProportion = employee.withEmployee / withEmployeeCount;
+                                  
+                                  return (
+                                    <div className="space-y-2">
+                                      {withEmployeeGrouping.groupBreakdown.map((group, idx) => {
+                                        const employeeGroups = Math.floor(group.completeGroups * employeeProportion);
+                                        const employeeUnits = employeeGroups * group.unitsPerGroup;
+                                        
+                                        if (employeeGroups === 0) return null;
+                                        
+                                        return (
+                                          <div key={idx} className="bg-white p-2 rounded border text-sm">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium text-yellow-700">~{employeeGroups}</span>
+                                              <span className="text-gray-600">{group.groupName.toLowerCase()}{employeeGroups !== 1 ? 's' : ''}</span>
+                                              <span className="text-gray-400">({employeeUnits} units)</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      
+                                      {withEmployeeGrouping.remainingIndividualItems > 0 && (
+                                        <div className="bg-white p-2 rounded border text-sm text-center">
+                                          <span className="text-orange-600 font-medium">
+                                            ~{Math.floor(withEmployeeGrouping.remainingIndividualItems * employeeProportion)} individual items
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             )}
                             
-                            <div className={`mt-3 p-3 bg-white rounded border-l-4 border-${statusInfo.color}-400`}>
-                              <div className={`font-medium text-${statusInfo.color}-800`}>
-                                <strong>{statusInfo.label} Summary:</strong>
-                                {statusInfo.groupBreakdown.map((group, idx) => (
-                                  <span key={idx}>
-                                    {idx > 0 ? ', ' : ' '}
-                                    {group.completeGroups} {group.groupName.toLowerCase()}{group.completeGroups !== 1 ? 's' : ''}
+                            {/* Items sold by employee */}
+                            {employee.sold > 0 && (
+                              <div className="bg-green-50 border border-green-200 rounded p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-sm text-green-800 flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    Items Sold
                                   </span>
-                                ))}
-                                {statusInfo.remainingIndividualItems > 0 && (
-                                  <span>
-                                    {statusInfo.groupBreakdown.length > 0 ? ', ' : ''}
-                                    {statusInfo.remainingIndividualItems} individual item{statusInfo.remainingIndividualItems !== 1 ? 's' : ''}
-                                  </span>
-                                )}
+                                  <Badge variant="outline" className="text-xs bg-green-100 text-green-700">
+                                    {employee.sold} items
+                                  </Badge>
+                                </div>
+                                
+                                {(() => {
+                                  const soldGrouping = groupingData.statusBreakdowns.find(s => s.status === ItemStatus.SOLD);
+                                  
+                                  if (!soldGrouping) return null;
+                                  
+                                  // Calculate proportional grouping for this employee's sales
+                                  const employeeProportion = employee.sold / soldCount;
+                                  
+                                  return (
+                                    <div className="space-y-2">
+                                      {soldGrouping.groupBreakdown.map((group, idx) => {
+                                        const employeeGroups = Math.floor(group.completeGroups * employeeProportion);
+                                        const employeeUnits = employeeGroups * group.unitsPerGroup;
+                                        
+                                        if (employeeGroups === 0) return null;
+                                        
+                                        return (
+                                          <div key={idx} className="bg-white p-2 rounded border text-sm">
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium text-green-700">~{employeeGroups}</span>
+                                              <span className="text-gray-600">{group.groupName.toLowerCase()}{employeeGroups !== 1 ? 's' : ''}</span>
+                                              <span className="text-gray-400">({employeeUnits} units)</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      
+                                      {soldGrouping.remainingIndividualItems > 0 && (
+                                        <div className="bg-white p-2 rounded border text-sm text-center">
+                                          <span className="text-orange-600 font-medium">
+                                            ~{Math.floor(soldGrouping.remainingIndividualItems * employeeProportion)} individual items
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </div>
-                            </div>
+                            )}
                           </div>
-                        )}
+                        </div>
+                      );
+                    });
+                  })()}
+                  
+                  {/* Total Summary */}
+                  <div className="border rounded-lg p-3 bg-indigo-50 border-indigo-200">
+                    <h4 className="font-semibold text-indigo-800 mb-2">Total Summary</h4>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <div className="font-bold text-lg text-blue-600">{availableCount}</div>
+                        <div className="text-xs text-gray-600">Available</div>
                       </div>
-                    ))}
+                      <div>
+                        <div className="font-bold text-lg text-yellow-600">{withEmployeeCount}</div>
+                        <div className="text-xs text-gray-600">With Employees</div>
+                      </div>
+                      <div>
+                        <div className="font-bold text-lg text-green-600">{soldCount}</div>
+                        <div className="text-xs text-gray-600">Sold</div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>

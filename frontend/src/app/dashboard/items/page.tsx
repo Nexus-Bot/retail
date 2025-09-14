@@ -5,11 +5,11 @@ import { ProtectedRoute } from '@/components/auth/protected-route';
 import DashboardLayout from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Package, Plus, Search, Edit, Loader2 } from 'lucide-react';
 import { UserRole, ItemStatus, ItemTypeSummary } from '@/types/api';
 import { useItemTypes, useItemsSummary } from '@/hooks/use-queries';
+import { calculateItemGrouping, getGroupingBreakdown } from '@/lib/grouping-utils';
 import { AddItemsModal } from './components/add-items-modal';
 import { BulkOperationsModal } from './components/bulk-operations-modal';
 import { ItemTypeDetailsModal } from './components/item-type-details-modal';
@@ -51,6 +51,13 @@ function ItemsManagementContent() {
     const typeSummary = getItemTypeSummary(itemTypeId);
     const statusCount = typeSummary.statusCounts.find((s) => s.status === status);
     return statusCount?.count || 0;
+  };
+
+  // Get grouping breakdown for specific status using shared utility
+  const getStatusGroupingBreakdown = (itemTypeId: string, status: ItemStatus): string => {
+    const itemType = itemTypes.find(type => type._id === itemTypeId);
+    const count = getStatusCount(itemTypeId, status);
+    return getGroupingBreakdown(count, itemType?.grouping || []);
   };
 
   // Handle opening item type details
@@ -112,18 +119,18 @@ function ItemsManagementContent() {
                   <TableHead>Actions</TableHead>
                   <TableHead>Item Type</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Total Items</TableHead>
                   <TableHead>Available</TableHead>
                   <TableHead>With Employees</TableHead>
                   <TableHead>Sold</TableHead>
+                  <TableHead>Total Items</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredItemTypes.map((itemType) => {
                   const typeSummary = getItemTypeSummary(itemType._id);
-                  const availableCount = getStatusCount(itemType._id, ItemStatus.IN_INVENTORY);
-                  const withEmployeeCount = getStatusCount(itemType._id, ItemStatus.WITH_EMPLOYEE);
-                  const soldCount = getStatusCount(itemType._id, ItemStatus.SOLD);
+                  const availableBreakdown = getStatusGroupingBreakdown(itemType._id, ItemStatus.IN_INVENTORY);
+                  const withEmployeeBreakdown = getStatusGroupingBreakdown(itemType._id, ItemStatus.WITH_EMPLOYEE);
+                  const soldBreakdown = getStatusGroupingBreakdown(itemType._id, ItemStatus.SOLD);
                   
                   return (
                     <TableRow 
@@ -151,22 +158,37 @@ function ItemsManagementContent() {
                         {itemType.description || '-'}
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{typeSummary.totalCount}</div>
+                        <div className="text-sm text-blue-700 bg-blue-50 rounded px-2 py-1 inline-block">
+                          {availableBreakdown}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-blue-100 text-blue-700">
-                          {availableCount}
-                        </Badge>
+                        <div className="text-sm text-yellow-700 bg-yellow-50 rounded px-2 py-1 inline-block">
+                          {withEmployeeBreakdown}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-yellow-100 text-yellow-700">
-                          {withEmployeeCount}
-                        </Badge>
+                        <div className="text-sm text-green-700 bg-green-50 rounded px-2 py-1 inline-block">
+                          {soldBreakdown}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-green-100 text-green-700">
-                          {soldCount}
-                        </Badge>
+                        <div className="font-medium text-sm">
+                          {typeSummary.totalCount > 0 && itemType.grouping && itemType.grouping.length > 0 
+                            ? (() => {
+                                const grouping = calculateItemGrouping(typeSummary.totalCount, itemType.grouping);
+                                const groupsText = grouping.groups
+                                  .map(group => `${group.completeGroups} ${group.groupName.toLowerCase()}${group.completeGroups !== 1 ? 's' : ''}`)
+                                  .join(', ');
+                                const individualText = grouping.remainingIndividualItems > 0 
+                                  ? `${grouping.remainingIndividualItems} unit${grouping.remainingIndividualItems !== 1 ? 's' : ''}`
+                                  : '';
+                                const parts = [groupsText, individualText].filter(Boolean);
+                                return parts.join(', ') || typeSummary.totalCount.toString();
+                              })()
+                            : typeSummary.totalCount.toString()
+                          }
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

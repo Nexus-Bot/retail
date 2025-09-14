@@ -143,3 +143,33 @@ export function getGroupingTooltip(grouping: ItemGrouping): string {
   
   return `Total: ${grouping.totalItems} items\n${details.join('\n')}`;
 }
+
+/**
+ * Get grouping breakdown for display in tables and UI
+ * @param count Number of items
+ * @param groupings Available grouping types
+ * @returns Formatted string showing grouping breakdown (e.g., "2 boxes, 3 units")
+ */
+export function getGroupingBreakdown(count: number, groupings: GroupingType[]): string {
+  if (count === 0) return '0';
+  if (!groupings || groupings.length === 0) {
+    return count.toString();
+  }
+
+  const grouping = calculateItemGrouping(count, groupings);
+  
+  if (grouping.groups.length === 0) {
+    return `${grouping.remainingIndividualItems} unit${grouping.remainingIndividualItems !== 1 ? 's' : ''}`;
+  }
+
+  const groupsText = grouping.groups
+    .map(group => `${group.completeGroups} ${group.groupName.toLowerCase()}${group.completeGroups !== 1 ? 's' : ''}`)
+    .join(', ');
+  
+  const individualText = grouping.remainingIndividualItems > 0 
+    ? `${grouping.remainingIndividualItems} unit${grouping.remainingIndividualItems !== 1 ? 's' : ''}`
+    : '';
+
+  const parts = [groupsText, individualText].filter(Boolean);
+  return parts.join(', ');
+}
