@@ -223,7 +223,11 @@ export const getItems = async (req: Request, res: Response) => {
       { $match: summaryFilter },
       {
         $group: {
-          _id: { itemType: "$itemType", status: "$status", currentHolder: "$currentHolder" },
+          _id: {
+            itemType: "$itemType",
+            status: "$status",
+            currentHolder: "$currentHolder",
+          },
           count: { $sum: 1 },
         },
       },
@@ -252,20 +256,20 @@ export const getItems = async (req: Request, res: Response) => {
           employeeBreakdown: {
             $push: {
               $cond: {
-                if: { 
+                if: {
                   $and: [
                     { $ne: ["$_id.currentHolder", null] },
-                    { $in: ["$_id.status", ["with_employee", "sold"]] }
-                  ]
+                    { $in: ["$_id.status", ["with_employee", "sold"]] },
+                  ],
                 },
                 then: {
                   employeeId: "$_id.currentHolder",
                   employeeName: { $arrayElemAt: ["$employee.username", 0] },
-                  count: "$count"
+                  count: "$count",
                 },
-                else: "$$REMOVE"
-              }
-            }
+                else: "$$REMOVE",
+              },
+            },
           },
         },
       },
@@ -280,9 +284,9 @@ export const getItems = async (req: Request, res: Response) => {
               employeeBreakdown: {
                 $filter: {
                   input: "$employeeBreakdown",
-                  cond: { $ne: ["$$this", "$$REMOVE"] }
-                }
-              }
+                  cond: { $ne: ["$$this", "$$REMOVE"] },
+                },
+              },
             },
           },
           totalCount: { $sum: "$count" },
@@ -422,19 +426,32 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
     // Employee access control - Special case for returns (sold -> with_employee)
     if (currentUser?.role === UserRole.EMPLOYEE) {
       // For returns, any employee can process sold items, bypass currentHolder restriction
-      if (!(currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE)) {
+      if (
+        !(
+          currentStatus === ItemStatus.SOLD &&
+          status === ItemStatus.WITH_EMPLOYEE
+        )
+      ) {
         filter.currentHolder = currentUser.id;
       }
     }
-    
+
     // For WITH_EMPLOYEE -> IN_INVENTORY transition, filter by specific employee
-    if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.IN_INVENTORY && currentHolder) {
+    if (
+      currentStatus === ItemStatus.WITH_EMPLOYEE &&
+      status === ItemStatus.IN_INVENTORY &&
+      currentHolder
+    ) {
       filter.currentHolder = currentHolder;
     }
-    
+
     // For return processing, filter by specific customer (saleTo)
     // This ensures customers can only return items they originally purchased
-    if (currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE && saleTo) {
+    if (
+      currentStatus === ItemStatus.SOLD &&
+      status === ItemStatus.WITH_EMPLOYEE &&
+      saleTo
+    ) {
       filter.saleTo = saleTo;
     }
 
@@ -458,19 +475,22 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
     // Validate business rules before bulk update
     const updateData: any = {};
 
-
     // === BUSINESS LOGIC VALIDATION BY TRANSITION ===
-    
+
     // 1. IN_INVENTORY -> WITH_EMPLOYEE (Assign to Employee)
-    if (currentStatus === ItemStatus.IN_INVENTORY && status === ItemStatus.WITH_EMPLOYEE) {
+    if (
+      currentStatus === ItemStatus.IN_INVENTORY &&
+      status === ItemStatus.WITH_EMPLOYEE
+    ) {
       // Validate required fields
       if (!currentHolder) {
         return res.status(400).json({
           success: false,
-          message: "Employee ID (currentHolder) is required when assigning items to employee",
+          message:
+            "Employee ID (currentHolder) is required when assigning items to employee",
         });
       }
-      
+
       // Validate employee exists and belongs to same agency
       const employee = await User.findById(currentHolder);
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
@@ -485,22 +505,26 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Employee must be from your agency",
         });
       }
-      
+
       // Block unrelated fields for this transition
       if (saleTo !== undefined || sellPrice !== undefined) {
         return res.status(400).json({
           success: false,
-          message: "saleTo and sellPrice are not allowed for assignment transitions",
+          message:
+            "saleTo and sellPrice are not allowed for assignment transitions",
         });
       }
-      
+
       // Set update data
       updateData.status = status;
       updateData.currentHolder = currentHolder;
     }
-    
-    // 2. WITH_EMPLOYEE -> SOLD (Sale Transaction)  
-    else if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.SOLD) {
+
+    // 2. WITH_EMPLOYEE -> SOLD (Sale Transaction)
+    else if (
+      currentStatus === ItemStatus.WITH_EMPLOYEE &&
+      status === ItemStatus.SOLD
+    ) {
       // Validate required fields
       if (!saleTo) {
         return res.status(400).json({
@@ -514,7 +538,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Sell price is required for sale transactions",
         });
       }
-      
+
       // Validate sellPrice
       if (typeof sellPrice !== "number" || sellPrice < 0) {
         return res.status(400).json({
@@ -522,7 +546,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Sell price must be a positive number",
         });
       }
-      
+
       // Validate customer exists and belongs to same agency
       const customer = await Customer.findById(saleTo);
       if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
@@ -531,15 +555,16 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Invalid customer or customer not from your agency",
         });
       }
-      
+
       // Block unrelated fields for this transition
       if (currentHolder !== undefined) {
         return res.status(400).json({
           success: false,
-          message: "currentHolder is not allowed for sale transactions (currentHolder preserved during sale)",
+          message:
+            "currentHolder is not allowed for sale transactions (currentHolder preserved during sale)",
         });
       }
-      
+
       // Set update data with analytics
       updateData.status = status;
       updateData.sellPrice = sellPrice;
@@ -547,9 +572,12 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       updateData.saleDate = new Date();
       updateData.returnDate = null; // Clear return date
     }
-    
+
     // 3. SOLD -> WITH_EMPLOYEE (Return Processing)
-    else if (currentStatus === ItemStatus.SOLD && status === ItemStatus.WITH_EMPLOYEE) {
+    else if (
+      currentStatus === ItemStatus.SOLD &&
+      status === ItemStatus.WITH_EMPLOYEE
+    ) {
       // Validate required fields
       if (!currentHolder) {
         return res.status(400).json({
@@ -557,14 +585,15 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Employee ID (currentHolder) is required to process returns",
         });
       }
-      
+
       if (!saleTo) {
         return res.status(400).json({
           success: false,
-          message: "Customer ID (saleTo) is required to validate return eligibility",
+          message:
+            "Customer ID (saleTo) is required to validate return eligibility",
         });
       }
-      
+
       // Validate employee exists and belongs to same agency (any employee can process returns)
       const employee = await User.findById(currentHolder);
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
@@ -579,7 +608,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Employee must be from your agency",
         });
       }
-      
+
       // Validate customer exists and belongs to same agency
       const customer = await Customer.findById(saleTo);
       if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
@@ -588,7 +617,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Invalid customer or customer not from your agency",
         });
       }
-      
+
       // Block unrelated fields for this transition
       if (sellPrice !== undefined) {
         return res.status(400).json({
@@ -596,31 +625,36 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "sellPrice is not allowed for return processing",
         });
       }
-      
+
       // Set update data with analytics
       updateData.status = status;
       updateData.currentHolder = currentHolder;
       updateData.returnDate = new Date();
     }
-    
+
     // 4. WITH_EMPLOYEE -> IN_INVENTORY (Return to Inventory - Owner Only)
-    else if (currentStatus === ItemStatus.WITH_EMPLOYEE && status === ItemStatus.IN_INVENTORY) {
+    else if (
+      currentStatus === ItemStatus.WITH_EMPLOYEE &&
+      status === ItemStatus.IN_INVENTORY
+    ) {
       // Only owners can return items from employee to inventory
       if (currentUser?.role !== UserRole.OWNER) {
         return res.status(403).json({
           success: false,
-          message: "Only agency owners can return items from employees to inventory",
+          message:
+            "Only agency owners can return items from employees to inventory",
         });
       }
-      
+
       // Validate required fields
       if (!currentHolder) {
         return res.status(400).json({
           success: false,
-          message: "Employee ID (currentHolder) is required to specify which employee's items to return to inventory",
+          message:
+            "Employee ID (currentHolder) is required to specify which employee's items to return to inventory",
         });
       }
-      
+
       // Validate employee exists and belongs to same agency
       const employee = await User.findById(currentHolder);
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
@@ -635,21 +669,21 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
           message: "Employee must be from your agency",
         });
       }
-      
+
       // Block unrelated fields for this transition
       if (saleTo !== undefined || sellPrice !== undefined) {
         return res.status(400).json({
           success: false,
-          message: "saleTo and sellPrice are not allowed for inventory return transitions",
+          message:
+            "saleTo and sellPrice are not allowed for inventory return transitions",
         });
       }
-      
+
       // Set update data - clear employee assignment and return to inventory
       updateData.status = status;
       updateData.currentHolder = null; // Remove employee assignment
-      updateData.returnDate = new Date(); // Track when returned to inventory
     }
-    
+
     // Block invalid transitions
     else if (currentStatus !== status) {
       return res.status(400).json({
@@ -657,7 +691,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
         message: `Invalid transition from ${currentStatus} to ${status}`,
       });
     }
-    
+
     // Block redundant updates (same status)
     else {
       return res.status(400).json({
@@ -814,29 +848,34 @@ export const getMyItems = async (req: Request, res: Response) => {
         $match: {
           agency: new mongoose.Types.ObjectId(currentUser.agencyId),
           ...(status && { status }),
-          ...(itemTypeId && { itemType: new mongoose.Types.ObjectId(itemTypeId as string) }),
-        }
+          ...(itemTypeId && {
+            itemType: new mongoose.Types.ObjectId(itemTypeId as string),
+          }),
+        },
       },
       {
         $addFields: {
           // Apply currentHolder filter only for WITH_EMPLOYEE and SOLD statuses
           isEmployeeAccessible: {
             $cond: {
-              if: { 
-                $in: ["$status", [ItemStatus.WITH_EMPLOYEE, ItemStatus.SOLD]] 
+              if: {
+                $in: ["$status", [ItemStatus.WITH_EMPLOYEE, ItemStatus.SOLD]],
               },
-              then: { 
-                $eq: ["$currentHolder", new mongoose.Types.ObjectId(currentUser.id)] 
+              then: {
+                $eq: [
+                  "$currentHolder",
+                  new mongoose.Types.ObjectId(currentUser.id),
+                ],
               },
-              else: true // IN_INVENTORY items are visible to all employees in the agency
-            }
-          }
-        }
+              else: true, // IN_INVENTORY items are visible to all employees in the agency
+            },
+          },
+        },
       },
       {
         $match: {
-          isEmployeeAccessible: true
-        }
+          isEmployeeAccessible: true,
+        },
       },
       {
         $group: {

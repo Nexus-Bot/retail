@@ -545,12 +545,34 @@ export interface AnalyticsQuery {
   groupBy?: 'day' | 'week' | 'month' | 'year';
 }
 
+export interface ItemTypeAnalytics {
+  itemTypes: Array<{
+    _id: string;
+    itemTypeName: string;
+    grouping?: Array<{
+      groupName: string;
+      unitsPerGroup: number;
+    }>;
+    salesCount: number;
+    salesRevenue: number;
+    returnsCount: number;
+    returnsRevenue: number;
+  }>;
+  totals: {
+    totalSales: number;
+    totalSalesRevenue: number;
+    totalReturns: number;
+    totalReturnsRevenue: number;
+  };
+  filters: {
+    startDate: string | null;
+    endDate: string | null;
+    employeeId: string | null;
+  };
+}
+
 // Analytics API Response Types
-export type SalesAnalyticsResponse = BaseApiResponse<SalesAnalytics>;
-export type ReturnsAnalyticsResponse = BaseApiResponse<ReturnsAnalytics>;
-export type EmployeeAnalyticsResponse = BaseApiResponse<EmployeeAnalytics>;
-export type CustomerAnalyticsResponse = BaseApiResponse<CustomerAnalytics>;
-export type DashboardAnalyticsResponse = BaseApiResponse<DashboardAnalytics>;
+export type ItemTypeAnalyticsResponse = BaseApiResponse<ItemTypeAnalytics>;
 
 // Item Summary Types
 export interface ItemStatusCount {

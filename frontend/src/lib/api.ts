@@ -57,12 +57,7 @@ import {
   CreateCustomerResponse,
   UpdateCustomerResponse,
   // Analytics
-  AnalyticsQuery,
-  SalesAnalyticsResponse,
-  ReturnsAnalyticsResponse,
-  EmployeeAnalyticsResponse,
-  CustomerAnalyticsResponse,
-  DashboardAnalyticsResponse,
+  ItemTypeAnalyticsResponse,
 } from "@/types/api";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -231,30 +226,8 @@ export const customersAPI = {
 
 // Analytics API
 export const analyticsAPI = {
-  getDashboardAnalytics: (params?: { startDate?: string; endDate?: string }) =>
-    api.get<DashboardAnalyticsResponse>("/analytics/dashboard", { params }),
-
-  getSalesAnalytics: (params?: AnalyticsQuery) =>
-    api.get<SalesAnalyticsResponse>("/analytics/sales", { params }),
-
-  getReturnsAnalytics: (params?: AnalyticsQuery) =>
-    api.get<ReturnsAnalyticsResponse>("/analytics/returns", { params }),
-
-  getEmployeeAnalytics: (
-    employeeId: string,
-    params?: { startDate?: string; endDate?: string; groupBy?: string }
-  ) =>
-    api.get<EmployeeAnalyticsResponse>(`/analytics/employees/${employeeId}`, {
-      params,
-    }),
-
-  getCustomerAnalytics: (
-    customerId: string,
-    params?: { startDate?: string; endDate?: string; groupBy?: string }
-  ) =>
-    api.get<CustomerAnalyticsResponse>(`/analytics/customers/${customerId}`, {
-      params,
-    }),
+  getItemTypeAnalytics: (params?: { startDate?: string; endDate?: string; employeeId?: string }) =>
+    api.get<ItemTypeAnalyticsResponse>("/analytics/item-types", { params }),
 };
 
 export default api;
