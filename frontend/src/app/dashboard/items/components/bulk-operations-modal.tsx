@@ -49,8 +49,6 @@ interface BulkOperationsModalProps {
   summary?: ItemTypeSummary[];
 }
 
-// Using the shared QuantitySubItem interface
-
 export function BulkOperationsModal({
   isOpen,
   onClose,
@@ -68,15 +66,20 @@ export function BulkOperationsModal({
     notes: "",
   });
 
+  // Helper function to reset form state
+  const resetForm = () => {
+    setOperationType("");
+    setSubItems([]);
+    setBulkForm({
+      currentHolder: "",
+      notes: "",
+    });
+  };
+
   // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      setOperationType("");
-      setSubItems([]);
-      setBulkForm({
-        currentHolder: "",
-        notes: "",
-      });
+      resetForm();
     }
   }, [isOpen, selectedItemType]);
 
@@ -201,12 +204,7 @@ export function BulkOperationsModal({
   };
 
   const handleClose = () => {
-    setOperationType("");
-    setSubItems([]);
-    setBulkForm({
-      currentHolder: "",
-      notes: "",
-    });
+    resetForm();
     onClose();
   };
 
@@ -397,10 +395,8 @@ export function BulkOperationsModal({
 
               {/* Operation-specific form fields */}
               <div className="space-y-4">
-                {/* Employee Selection */}
-                {(operationType === "assign" ||
-                  operationType === "return_to_inventory") && (
-                  <div className="space-y-2">
+                {/* Employee Selection - required for both operations */}
+                <div className="space-y-2">
                     <Label htmlFor="employee">
                       {operationType === "assign"
                         ? "Assign to Employee"
@@ -424,7 +420,6 @@ export function BulkOperationsModal({
                       </SelectContent>
                     </Select>
                   </div>
-                )}
 
                 {/* Notes */}
                 <div className="space-y-2">

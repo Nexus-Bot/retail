@@ -42,11 +42,6 @@ function AllCustomersContent() {
   const customers = customersResponse?.data?.data || [];
   const pagination = customersResponse?.data?.pagination;
 
-  const filteredCustomers = customers.filter((customer: ApiCustomer) =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.mobile.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
@@ -174,7 +169,7 @@ function AllCustomersContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer: ApiCustomer) => (
+                {customers.map((customer: ApiCustomer) => (
                   <TableRow key={customer._id}>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -230,7 +225,7 @@ function AllCustomersContent() {
               </TableBody>
             </Table>
             
-            {filteredCustomers.length === 0 && !loading && (
+            {customers.length === 0 && !loading && (
               <div className="text-center py-10">
                 <Users className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">

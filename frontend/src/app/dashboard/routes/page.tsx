@@ -41,10 +41,6 @@ function AllRoutesContent() {
   const routes = routesResponse?.data?.data || [];
   const pagination = routesResponse?.data?.pagination;
 
-  const filteredRoutes = routes.filter((route: ApiRoute) =>
-    route.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div className="p-4 space-y-6">
       {/* Header */}
@@ -154,7 +150,7 @@ function AllRoutesContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredRoutes.map((route: ApiRoute) => (
+                {routes.map((route: ApiRoute) => (
                   <TableRow key={route._id}>
                     <TableCell>
                       <div className="flex space-x-2">
@@ -197,7 +193,7 @@ function AllRoutesContent() {
               </TableBody>
             </Table>
             
-            {filteredRoutes.length === 0 && !loading && (
+            {routes.length === 0 && !loading && (
               <div className="text-center py-10">
                 <Route className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">

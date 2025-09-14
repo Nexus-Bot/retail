@@ -49,16 +49,13 @@ interface BulkUpdateItemsModalProps {
   onItemTypeSelect: (itemTypeId: string) => void;
 }
 
-// Using the shared QuantitySubItem interface
-interface BillingSubItem extends QuantitySubItem {}
-
 interface BillingItem {
   itemTypeId: string;
   itemTypeName: string;
   totalPrice: string; // Total price for this item type
-  availableGroupings: any[];
+  availableGroupings: { groupName: string; unitsPerGroup: number }[];
   maxAvailable: number; // Maximum available items for current status
-  subItems: BillingSubItem[]; // Array of different quantity types
+  subItems: QuantitySubItem[]; // Array of different quantity types
 }
 
 interface BulkForm {
@@ -93,6 +90,22 @@ export function BulkUpdateItemsModal({
   // Fetch my items summary to get available quantities
   const { data: myItemsSummary } = useMyItemsSummary();
   const summary = myItemsSummary?.summary || [];
+
+  // Helper function to update bulk form
+  const updateBulkForm = (updates: Partial<BulkForm>) => {
+    setBulkForm(prev => ({ ...prev, ...updates }));
+  };
+
+  // Helper function to reset form
+  const resetForm = () => {
+    setBulkForm({
+      currentStatus: ItemStatus.WITH_EMPLOYEE,
+      newStatus: ItemStatus.SOLD,
+      saleTo: "",
+      notes: "",
+      billingItems: [],
+    });
+  };
 
   // Get available count for a specific item type and status
   const getAvailableCount = (
@@ -162,8 +175,7 @@ export function BulkUpdateItemsModal({
       subItems: [], // Start with no sub-items
     };
 
-    setBulkForm({
-      ...bulkForm,
+    updateBulkForm({
       billingItems: [...bulkForm.billingItems, newItem],
     });
 
@@ -177,7 +189,7 @@ export function BulkUpdateItemsModal({
     quantityType: "individual" | "group",
     groupName?: string
   ) => {
-    const newSubItem: BillingSubItem = {
+    const newSubItem: QuantitySubItem = {
       id: Date.now().toString(), // Add unique ID for QuantitySubItem interface
       quantityType,
       quantity: quantityType === "individual" ? "1" : "0",
@@ -190,7 +202,7 @@ export function BulkUpdateItemsModal({
         ? { ...item, subItems: [...item.subItems, newSubItem] }
         : item
     );
-    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+    updateBulkForm({ billingItems: updatedItems });
   };
 
   // Remove sub-item from a billing item
@@ -203,13 +215,13 @@ export function BulkUpdateItemsModal({
           }
         : item
     );
-    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+    updateBulkForm({ billingItems: updatedItems });
   };
 
   // Remove billing item
   const removeBillingItem = (index: number) => {
     const updatedItems = bulkForm.billingItems.filter((_, i) => i !== index);
-    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+    updateBulkForm({ billingItems: updatedItems });
   };
 
   // Update billing item
@@ -217,14 +229,14 @@ export function BulkUpdateItemsModal({
     const updatedItems = bulkForm.billingItems.map((item, i) =>
       i === index ? { ...item, ...updates } : item
     );
-    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+    updateBulkForm({ billingItems: updatedItems });
   };
 
   // Update sub-item
   const updateSubItem = (
     itemIndex: number,
     subItemIndex: number,
-    updates: Partial<BillingSubItem>
+    updates: Partial<QuantitySubItem>
   ) => {
     const updatedItems = bulkForm.billingItems.map((item, index) =>
       index === itemIndex
@@ -236,7 +248,7 @@ export function BulkUpdateItemsModal({
           }
         : item
     );
-    setBulkForm({ ...bulkForm, billingItems: updatedItems });
+    updateBulkForm({ billingItems: updatedItems });
   };
 
   // Calculate total quantity for an item type
@@ -425,16 +437,6 @@ export function BulkUpdateItemsModal({
     }
   };
 
-  const resetForm = () => {
-    setBulkForm({
-      currentStatus: ItemStatus.WITH_EMPLOYEE,
-      newStatus: ItemStatus.SOLD,
-      saleTo: "",
-      notes: "",
-      billingItems: [],
-    });
-  };
-
   const handleClose = () => {
     resetForm();
     onClose();
@@ -473,8 +475,7 @@ export function BulkUpdateItemsModal({
                 value={bulkForm.currentStatus}
                 onValueChange={(value) => {
                   const newCurrentStatus = value as ItemStatus;
-                  setBulkForm({
-                    ...bulkForm,
+                  updateBulkForm({
                     currentStatus: newCurrentStatus,
                     newStatus:
                       newCurrentStatus === ItemStatus.WITH_EMPLOYEE
@@ -502,8 +503,7 @@ export function BulkUpdateItemsModal({
               <Select
                 value={bulkForm.newStatus}
                 onValueChange={(value) =>
-                  setBulkForm({
-                    ...bulkForm,
+                  updateBulkForm({
                     newStatus: value as ItemStatus,
                     billingItems: [],
                     saleTo: "",
@@ -541,7 +541,7 @@ export function BulkUpdateItemsModal({
               <Select
                 value={bulkForm.saleTo}
                 onValueChange={(value) =>
-                  setBulkForm({ ...bulkForm, saleTo: value })
+                  updateBulkForm({ saleTo: value })
                 }
               >
                 <SelectTrigger>
@@ -585,17 +585,11 @@ export function BulkUpdateItemsModal({
                         );
                         return availableCount > 0;
                       })
-                      .map((type) => {
-                        const availableCount = getAvailableCount(
-                          type._id,
-                          bulkForm.currentStatus
-                        );
-                        return (
-                          <SelectItem key={type._id} value={type._id}>
-                            {type.name} ({getAvailableCountBreakdown(type._id, bulkForm.currentStatus)} available)
-                          </SelectItem>
-                        );
-                      })}
+                      .map((type) => (
+                        <SelectItem key={type._id} value={type._id}>
+                          {type.name} ({getAvailableCountBreakdown(type._id, bulkForm.currentStatus)} available)
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 {itemTypes.filter(
@@ -733,7 +727,7 @@ export function BulkUpdateItemsModal({
               placeholder="Add any notes about this transaction..."
               value={bulkForm.notes}
               onChange={(e) =>
-                setBulkForm({ ...bulkForm, notes: e.target.value })
+                updateBulkForm({ notes: e.target.value })
               }
             />
           </div>

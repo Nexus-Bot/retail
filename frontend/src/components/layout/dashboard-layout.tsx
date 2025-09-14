@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
-// import { useRoleAccess } from '@/components/auth/protected-route';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -89,7 +88,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  // Role access hook available if needed\n  // const { hasRole, isOwner, isEmployee } = useRoleAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
