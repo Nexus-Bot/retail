@@ -164,7 +164,8 @@ export const getItemType = async (req: Request, res: Response) => {
 
     const itemType = await ItemType.findById(id)
       .populate("agency", "name")
-      .populate("createdBy", "username");
+      .populate("createdBy", "username")
+      .lean();
 
     if (!itemType) {
       return res.status(404).json({

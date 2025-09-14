@@ -78,7 +78,8 @@ export const createItems = async (req: Request, res: Response) => {
       .populate("itemType", "name grouping description")
       .populate("agency", "name")
       .populate("createdBy", "username")
-      .limit(5); // Only return first 5 items to avoid large responses
+      .limit(5)
+      .lean(); // Only return first 5 items to avoid large responses
 
     return res.status(201).json({
       success: true,
@@ -324,7 +325,8 @@ export const getItem = async (req: Request, res: Response) => {
       .populate("agency", "name")
       .populate("createdBy", "username")
       .populate("currentHolder", "username")
-      .populate("saleTo", "name mobile");
+      .populate("saleTo", "name mobile")
+      .lean();
 
     if (!item) {
       return res.status(404).json({
@@ -492,7 +494,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       }
 
       // Validate employee exists and belongs to same agency
-      const employee = await User.findById(currentHolder);
+      const employee = await User.findById(currentHolder).lean();
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
         return res.status(404).json({
           success: false,
@@ -548,7 +550,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       }
 
       // Validate customer exists and belongs to same agency
-      const customer = await Customer.findById(saleTo);
+      const customer = await Customer.findById(saleTo).lean();
       if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
         return res.status(400).json({
           success: false,
@@ -595,7 +597,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       }
 
       // Validate employee exists and belongs to same agency (any employee can process returns)
-      const employee = await User.findById(currentHolder);
+      const employee = await User.findById(currentHolder).lean();
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
         return res.status(404).json({
           success: false,
@@ -610,7 +612,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       }
 
       // Validate customer exists and belongs to same agency
-      const customer = await Customer.findById(saleTo);
+      const customer = await Customer.findById(saleTo).lean();
       if (!customer || customer.agency.toString() !== currentUser?.agencyId) {
         return res.status(400).json({
           success: false,
@@ -656,7 +658,7 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       }
 
       // Validate employee exists and belongs to same agency
-      const employee = await User.findById(currentHolder);
+      const employee = await User.findById(currentHolder).lean();
       if (!employee || employee.role !== UserRole.EMPLOYEE) {
         return res.status(404).json({
           success: false,
@@ -725,7 +727,8 @@ export const bulkUpdateItems = async (req: Request, res: Response) => {
       .populate("createdBy", "username")
       .populate("currentHolder", "username")
       .populate("saleTo", "name mobile")
-      .limit(5); // Limit response size for large bulk operations
+      .limit(5)
+      .lean(); // Limit response size for large bulk operations
 
     return res.json({
       success: true,

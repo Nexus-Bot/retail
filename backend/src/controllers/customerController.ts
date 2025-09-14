@@ -34,7 +34,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const route = await Route.findOne({ 
       _id: routeId, 
       agency: currentUser.agencyId 
-    });
+    }).lean();
 
     if (!route) {
       return res.status(400).json({ 
@@ -47,7 +47,7 @@ export const createCustomer = async (req: Request, res: Response) => {
     const existingCustomer = await Customer.findOne({ 
       mobile: mobile.trim(), 
       agency: currentUser.agencyId 
-    });
+    }).lean();
     
     if (existingCustomer) {
       return res.status(400).json({ 
@@ -188,7 +188,7 @@ export const getCustomer = async (req: Request, res: Response) => {
     }).populate([
       { path: 'route', select: 'name' },
       { path: 'createdBy', select: 'username' }
-    ]);
+    ]).lean();
 
     if (!customer) {
       return res.status(404).json({ 
@@ -263,7 +263,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
       const route = await Route.findOne({ 
         _id: routeId, 
         agency: currentUser.agencyId 
-      });
+      }).lean();
 
       if (!route) {
         return res.status(400).json({ 
@@ -279,7 +279,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
         mobile: mobile.trim(), 
         agency: currentUser.agencyId,
         _id: { $ne: id }
-      });
+      }).lean();
 
       if (existingCustomer) {
         return res.status(400).json({ 

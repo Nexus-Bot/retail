@@ -19,7 +19,7 @@ export const createRoute = async (req: Request, res: Response) => {
     const existingRoute = await Route.findOne({ 
       name: name.trim(), 
       agency: currentUser.agencyId 
-    });
+    }).lean();
     
     if (existingRoute) {
       return res.status(400).json({ 
@@ -132,7 +132,7 @@ export const getRoute = async (req: Request, res: Response) => {
     const route = await Route.findOne({ 
       _id: id, 
       agency: currentUser.agencyId 
-    }).populate('createdBy', 'username');
+    }).populate('createdBy', 'username').lean();
 
     if (!route) {
       return res.status(404).json({ 
@@ -192,7 +192,7 @@ export const updateRoute = async (req: Request, res: Response) => {
       name: name.trim(), 
       agency: currentUser.agencyId,
       _id: { $ne: id }
-    });
+    }).lean();
 
     if (existingRoute) {
       return res.status(400).json({ 

@@ -12,7 +12,7 @@ export const createAgency = async (req: Request, res: Response) => {
       });
     }
 
-    const existingAgency = await Agency.findOne({ name });
+    const existingAgency = await Agency.findOne({ name }).lean();
     if (existingAgency) {
       return res.status(400).json({ 
         success: false, 
@@ -45,7 +45,8 @@ export const getAgencies = async (req: Request, res: Response) => {
   try {
     const agencies = await Agency.find()
       .populate('createdBy', 'username')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.json({
       success: true,
@@ -65,7 +66,8 @@ export const getAgency = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const agency = await Agency.findById(id)
-      .populate('createdBy', 'username');
+      .populate('createdBy', 'username')
+      .lean();
 
     if (!agency) {
       return res.status(404).json({ 
