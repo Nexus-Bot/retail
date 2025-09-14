@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/auth-context";
 import {
   QuantitySelector,
   calculateTotalQuantity as calculateTotal,
+  getTotalGroupingBreakdown,
   QuantitySubItem,
 } from "@/components/quantity-selector";
 import {
@@ -37,6 +38,7 @@ import {
   useCustomers,
   useMyItemsSummary,
 } from "@/hooks/use-queries";
+import { getGroupingBreakdown } from "@/lib/grouping-utils";
 import { toast } from "sonner";
 
 interface BulkUpdateItemsModalProps {
@@ -103,6 +105,16 @@ export function BulkUpdateItemsModal({
       (sc) => sc.status === status
     );
     return statusCount?.count || 0;
+  };
+
+  // Get grouping breakdown for available count
+  const getAvailableCountBreakdown = (
+    itemTypeId: string,
+    status: ItemStatus
+  ): string => {
+    const count = getAvailableCount(itemTypeId, status);
+    const itemType = itemTypes.find(type => type._id === itemTypeId);
+    return getGroupingBreakdown(count, itemType?.grouping || []);
   };
 
   // Add new billing item (create new item type entry)
@@ -257,7 +269,7 @@ export function BulkUpdateItemsModal({
 
       if (totalQuantity > item.maxAvailable) {
         toast.error(
-          `${item.itemTypeName}: Total requested ${totalQuantity} items but only ${item.maxAvailable} available`
+          `${item.itemTypeName}: Total requested ${getTotalGroupingBreakdown(item.subItems, item.availableGroupings)} but only ${getGroupingBreakdown(item.maxAvailable, item.availableGroupings)} available`
         );
         return;
       }
@@ -580,7 +592,7 @@ export function BulkUpdateItemsModal({
                         );
                         return (
                           <SelectItem key={type._id} value={type._id}>
-                            {type.name} ({availableCount} available)
+                            {type.name} ({getAvailableCountBreakdown(type._id, bulkForm.currentStatus)} available)
                           </SelectItem>
                         );
                       })}
@@ -628,14 +640,9 @@ export function BulkUpdateItemsModal({
                         {item.itemTypeName}
                       </h4>
                       <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>Available: {item.maxAvailable} items</span>
+                        <span>Available: {getGroupingBreakdown(item.maxAvailable, item.availableGroupings)}</span>
                         <span className="font-medium text-blue-600">
-                          Total:{" "}
-                          {calculateTotal(
-                            item.subItems,
-                            item.availableGroupings
-                          )}{" "}
-                          items
+                          Total: {getTotalGroupingBreakdown(item.subItems, item.availableGroupings)}
                         </span>
                       </div>
                     </div>
@@ -694,9 +701,7 @@ export function BulkUpdateItemsModal({
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        For all{" "}
-                        {calculateTotal(item.subItems, item.availableGroupings)}{" "}
-                        items combined
+                        For all {getTotalGroupingBreakdown(item.subItems, item.availableGroupings)} combined
                       </p>
                     </div>
                   )}

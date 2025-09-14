@@ -9,7 +9,7 @@ import { Package, Loader2 } from 'lucide-react';
 import { CreateItemsRequest } from '@/types/api';
 import { useItemTypes, useCreateItemsMutation } from '@/hooks/use-queries';
 import { toast } from 'sonner';
-import { QuantitySelector, calculateTotalQuantity, QuantitySubItem } from '@/components/quantity-selector';
+import { QuantitySelector, calculateTotalQuantity, getTotalGroupingBreakdown, QuantitySubItem } from '@/components/quantity-selector';
 
 interface AddItemsModalProps {
   isOpen: boolean;
@@ -84,6 +84,10 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
 
   const calculateTotalItems = () => {
     return calculateTotalQuantity(subItems, availableGroupings);
+  };
+
+  const getTotalItemsDisplay = () => {
+    return getTotalGroupingBreakdown(subItems, availableGroupings);
   };
 
   const handleSubmit = () => {
@@ -192,7 +196,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
             {subItems.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="text-sm font-medium text-blue-900">
-                  Total items to be created: <span className="text-lg">{calculateTotalItems()}</span>
+                  Total items to be created: <span className="text-lg">{getTotalItemsDisplay()}</span>
                 </div>
               </div>
             )}
@@ -219,7 +223,7 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
                   Adding...
                 </>
               ) : (
-                `Add ${calculateTotalItems()} Items`
+                `Add ${getTotalItemsDisplay()}`
               )}
             </Button>
           </DialogFooter>

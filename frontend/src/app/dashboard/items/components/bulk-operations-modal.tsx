@@ -28,7 +28,7 @@ import {
   Users,
   CheckCircle,
 } from "lucide-react";
-import { QuantitySelector, calculateTotalQuantity, QuantitySubItem } from "@/components/quantity-selector";
+import { QuantitySelector, calculateTotalQuantity, getTotalGroupingBreakdown, QuantitySubItem } from "@/components/quantity-selector";
 import {
   UserRole,
   ItemStatus,
@@ -37,6 +37,7 @@ import {
   ItemTypeSummary,
 } from "@/types/api";
 import { useUsers, useBulkUpdateItemsMutation } from "@/hooks/use-queries";
+import { getGroupingBreakdown } from "@/lib/grouping-utils";
 import { toast } from "sonner";
 
 interface BulkOperationsModalProps {
@@ -113,6 +114,11 @@ export function BulkOperationsModal({
       (s) => s.status === status
     );
     return statusCount?.count || 0;
+  };
+
+  const getStatusGroupingBreakdown = (status: ItemStatus): string => {
+    const count = getStatusCount(status);
+    return getGroupingBreakdown(count, selectedItemTypeData?.grouping || []);
   };
 
   // Bulk update mutation using optimized hook
@@ -231,6 +237,10 @@ export function BulkOperationsModal({
     return calculateTotalQuantity(subItems, availableGroupings);
   };
 
+  const getTotalItemsDisplay = () => {
+    return getTotalGroupingBreakdown(subItems, availableGroupings);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-full max-w-[95vw] sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
@@ -273,14 +283,14 @@ export function BulkOperationsModal({
                     <div className="space-y-1">
                       <Package className="h-5 w-5 mx-auto text-blue-500" />
                       <div className="font-bold text-blue-600">
-                        {getStatusCount(ItemStatus.IN_INVENTORY)}
+                        {getStatusGroupingBreakdown(ItemStatus.IN_INVENTORY)}
                       </div>
                       <div className="text-xs text-gray-600">Available</div>
                     </div>
                     <div className="space-y-1">
                       <Users className="h-5 w-5 mx-auto text-yellow-500" />
                       <div className="font-bold text-yellow-600">
-                        {getStatusCount(ItemStatus.WITH_EMPLOYEE)}
+                        {getStatusGroupingBreakdown(ItemStatus.WITH_EMPLOYEE)}
                       </div>
                       <div className="text-xs text-gray-600">
                         With Employees
@@ -289,7 +299,7 @@ export function BulkOperationsModal({
                     <div className="space-y-1">
                       <CheckCircle className="h-5 w-5 mx-auto text-green-500" />
                       <div className="font-bold text-green-600">
-                        {getStatusCount(ItemStatus.SOLD)}
+                        {getStatusGroupingBreakdown(ItemStatus.SOLD)}
                       </div>
                       <div className="text-xs text-gray-600">Sold</div>
                     </div>
@@ -379,7 +389,7 @@ export function BulkOperationsModal({
                       Total Items to Process:
                     </span>
                     <Badge variant="outline" className="font-bold text-base">
-                      {calculateTotalItems()} items
+                      {getTotalItemsDisplay()}
                     </Badge>
                   </div>
                 </div>
@@ -456,7 +466,7 @@ export function BulkOperationsModal({
                 Processing...
               </>
             ) : (
-              `Process ${calculateTotalItems()} Items`
+              `Process ${getTotalItemsDisplay()}`
             )}
           </Button>
         </DialogFooter>

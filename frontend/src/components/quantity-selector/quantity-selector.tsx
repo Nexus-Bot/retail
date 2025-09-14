@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2 } from "lucide-react";
+import { getGroupingBreakdown } from "@/lib/grouping-utils";
 
 export interface QuantitySubItem {
   id: string;
@@ -37,22 +38,27 @@ export function QuantitySelector({
       {subItems.length > 0 && (
         <div className="space-y-3">
           {subItems.map((subItem) => (
-            <div key={subItem.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-md">
+            <div
+              key={subItem.id}
+              className="flex items-center gap-3 p-3 bg-gray-50 rounded-md"
+            >
               <div className="flex-1">
                 {subItem.quantityType === "individual" ? (
                   <div className="flex items-center gap-3">
-                    <Label className="text-sm font-medium min-w-[100px]">Individual:</Label>
+                    <Label className="text-sm font-medium min-w-[100px]">
+                      Individual:
+                    </Label>
                     <Input
                       type="number"
                       min="1"
                       placeholder="Qty"
                       value={subItem.quantity}
                       onChange={(e) =>
-                        onUpdateSubItem(subItem.id, { quantity: e.target.value })
+                        onUpdateSubItem(subItem.id, {
+                          quantity: e.target.value,
+                        })
                       }
-                      className="w-24"
                     />
-                    <span className="text-sm text-gray-500">items</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
@@ -65,14 +71,11 @@ export function QuantitySelector({
                       placeholder="Groups"
                       value={subItem.groupQuantity}
                       onChange={(e) =>
-                        onUpdateSubItem(subItem.id, { groupQuantity: e.target.value })
+                        onUpdateSubItem(subItem.id, {
+                          groupQuantity: e.target.value,
+                        })
                       }
-                      className="w-24"
                     />
-                    <span className="text-sm text-gray-500">
-                      × {availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup} = {' '}
-                      {parseInt(subItem.groupQuantity) * (availableGroupings.find(g => g.groupName === subItem.groupName)?.unitsPerGroup || 1)} items
-                    </span>
                   </div>
                 )}
               </div>
@@ -118,7 +121,7 @@ export function QuantitySelector({
   );
 }
 
-// Helper function to calculate total items
+// Helper function to calculate total items (for backend operations)
 export function calculateTotalQuantity(
   subItems: QuantitySubItem[],
   availableGroupings: { groupName: string; unitsPerGroup: number }[]
@@ -135,4 +138,13 @@ export function calculateTotalQuantity(
     }
     return total;
   }, 0);
+}
+
+// Helper function to get grouping breakdown for display
+export function getTotalGroupingBreakdown(
+  subItems: QuantitySubItem[],
+  availableGroupings: { groupName: string; unitsPerGroup: number }[]
+): string {
+  const totalCount = calculateTotalQuantity(subItems, availableGroupings);
+  return getGroupingBreakdown(totalCount, availableGroupings);
 }

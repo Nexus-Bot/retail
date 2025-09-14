@@ -82,7 +82,7 @@ function ItemsManagementContent() {
           </Button>
           <Button variant="outline" onClick={() => setIsBulkDialogOpen(true)} className="w-fit">
             <Edit className="h-4 w-4 mr-2" />
-            Bulk Actions
+            Manage Items
           </Button>
         </div>
       </div>
