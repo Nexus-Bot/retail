@@ -337,27 +337,6 @@ export const useDeleteCustomerMutation = () => {
 };
 
 // Dashboard hooks (optimized for real-time data)
-export const useOwnerDashboard = () => {
-  const { user } = useAuth();
-  
-  const itemsQuery = useQuery({
-    queryKey: queryKeys.dashboard('owner', user?.agency?._id),
-    queryFn: () => itemsAPI.getItems({ limit: DEFAULT_LIMITS.LARGE }),
-    ...createQueryOptions.realtime(!!user?.agency?._id),
-  });
-  
-  const usersQuery = useQuery({
-    queryKey: queryKeys.users(user?.agency?._id),
-    queryFn: () => usersAPI.getUsers({ limit: DEFAULT_LIMITS.LARGE }),
-    ...createQueryOptions.realtime(!!user?.agency?._id),
-  });
-  
-  return {
-    items: itemsQuery,
-    users: usersQuery,
-    isLoading: itemsQuery.isLoading || usersQuery.isLoading,
-  };
-};
 
 // Analytics Hooks
 export const useItemTypeAnalytics = (filters?: { startDate?: string; endDate?: string; employeeId?: string }) => {

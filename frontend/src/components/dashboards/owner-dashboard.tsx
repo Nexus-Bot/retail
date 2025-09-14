@@ -8,23 +8,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/contexts/auth-context";
-import { User, UserRole } from "@/types/api";
-import { useOwnerDashboard } from "@/hooks/use-queries";
 import { Package, Users, BarChart3, Settings, Route, UserCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function OwnerDashboard() {
   const router = useRouter();
   const { user } = useAuth();
-
-  // Fetch dashboard data using optimized hooks
-  const { users: usersQuery } = useOwnerDashboard();
-  
-  const usersData = usersQuery.data;
-
-  // Calculate employee count
-  const users = usersData?.data?.data || [];
-  const employees = users.filter((u: User) => u.role === UserRole.EMPLOYEE);
 
   return (
     <div className="p-4 space-y-6">
@@ -116,7 +105,7 @@ export function OwnerDashboard() {
             <CardHeader>
               <CardTitle className="text-base flex items-center">
                 <Users className="mr-2 h-5 w-5" />
-                Employees ({employees.length})
+                Employees
               </CardTitle>
               <CardDescription>
                 Manage your team members. Add new employees, view performance, and assign items to employees.

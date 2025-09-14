@@ -66,9 +66,6 @@ export const queryKeys = {
   customer: (id: string) => ['customer', id],
 
   // Dashboard data
-  dashboard: (type: 'owner' | 'employee' | 'master', agencyId?: string, userId?: string) =>
-    ['dashboard', type, agencyId, userId].filter(Boolean),
-    
   // Health check
   health: () => ['health'],
 } as const;
