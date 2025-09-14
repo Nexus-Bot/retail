@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, ShoppingCart, Undo2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import {
   QuantitySelector,
@@ -58,7 +58,10 @@ interface BillingItem {
   subItems: QuantitySubItem[]; // Array of different quantity types
 }
 
+type OperationType = "sale" | "return";
+
 interface BulkForm {
+  operationType: OperationType;
   currentStatus: ItemStatus;
   newStatus: ItemStatus;
   saleTo: string; // Customer ID for sales
@@ -76,6 +79,7 @@ export function BulkUpdateItemsModal({
   const { user } = useAuth();
 
   const [bulkForm, setBulkForm] = useState<BulkForm>({
+    operationType: "sale",
     currentStatus: ItemStatus.WITH_EMPLOYEE,
     newStatus: ItemStatus.SOLD,
     saleTo: "",
@@ -96,9 +100,31 @@ export function BulkUpdateItemsModal({
     setBulkForm(prev => ({ ...prev, ...updates }));
   };
 
+  // Handle operation type change
+  const handleOperationTypeChange = (operationType: OperationType) => {
+    if (operationType === "sale") {
+      updateBulkForm({
+        operationType,
+        currentStatus: ItemStatus.WITH_EMPLOYEE,
+        newStatus: ItemStatus.SOLD,
+        billingItems: [],
+        saleTo: "",
+      });
+    } else {
+      updateBulkForm({
+        operationType,
+        currentStatus: ItemStatus.SOLD,
+        newStatus: ItemStatus.WITH_EMPLOYEE,
+        billingItems: [],
+        saleTo: "",
+      });
+    }
+  };
+
   // Helper function to reset form
   const resetForm = () => {
     setBulkForm({
+      operationType: "sale",
       currentStatus: ItemStatus.WITH_EMPLOYEE,
       newStatus: ItemStatus.SOLD,
       saleTo: "",
@@ -447,97 +473,57 @@ export function BulkUpdateItemsModal({
       <DialogContent className="w-full max-w-[95vw] sm:max-w-2xl mx-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE &&
-            bulkForm.newStatus === ItemStatus.SOLD
+            {bulkForm.operationType === "sale"
               ? "Point of Sale - Create Bill"
-              : bulkForm.currentStatus === ItemStatus.SOLD &&
-                bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
-              ? "Process Returns"
-              : "Update Items Status"}
+              : "Process Returns"}
           </DialogTitle>
           <DialogDescription>
-            {bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE &&
-            bulkForm.newStatus === ItemStatus.SOLD
+            {bulkForm.operationType === "sale"
               ? "Add multiple items to create a complete bill for your customer"
-              : bulkForm.currentStatus === ItemStatus.SOLD &&
-                bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE
-              ? "Process returns for items sold to customers"
-              : "Change status of items assigned to you"}
+              : "Process returns for items sold to customers"}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Transaction Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Current Status</Label>
-              <Select
-                value={bulkForm.currentStatus}
-                onValueChange={(value) => {
-                  const newCurrentStatus = value as ItemStatus;
-                  updateBulkForm({
-                    currentStatus: newCurrentStatus,
-                    newStatus:
-                      newCurrentStatus === ItemStatus.WITH_EMPLOYEE
-                        ? ItemStatus.SOLD
-                        : ItemStatus.WITH_EMPLOYEE,
-                    billingItems: [],
-                    saleTo: "",
-                  });
-                }}
+          {/* Operation Type Selection */}
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Select Operation</Label>
+            <div className="grid grid-cols-2 gap-3">
+              {/* Sale Card */}
+              <div
+                className={`cursor-pointer rounded-lg border p-3 text-center ${
+                  bulkForm.operationType === "sale"
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+                onClick={() => handleOperationTypeChange("sale")}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ItemStatus.WITH_EMPLOYEE}>
-                    In My Care
-                  </SelectItem>
-                  <SelectItem value={ItemStatus.SOLD}>Sold by Me</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <ShoppingCart className="mx-auto h-6 w-6 mb-2" />
+                <div className="font-medium">Sale</div>
+              </div>
 
-            <div className="space-y-2">
-              <Label>Action</Label>
-              <Select
-                value={bulkForm.newStatus}
-                onValueChange={(value) =>
-                  updateBulkForm({
-                    newStatus: value as ItemStatus,
-                    billingItems: [],
-                    saleTo: "",
-                  })
-                }
+              {/* Return Card */}
+              <div
+                className={`cursor-pointer rounded-lg border p-3 text-center ${
+                  bulkForm.operationType === "return"
+                    ? "border-orange-500 bg-orange-50"
+                    : "border-gray-300 hover:bg-gray-50"
+                }`}
+                onClick={() => handleOperationTypeChange("return")}
               >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE && (
-                    <SelectItem value={ItemStatus.SOLD}>Sell Items</SelectItem>
-                  )}
-                  {bulkForm.currentStatus === ItemStatus.SOLD && (
-                    <SelectItem value={ItemStatus.WITH_EMPLOYEE}>
-                      Process Returns
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                <Undo2 className="mx-auto h-6 w-6 mb-2" />
+                <div className="font-medium">Return</div>
+              </div>
             </div>
           </div>
 
           {/* Customer Selection */}
-          {((bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE &&
-            bulkForm.newStatus === ItemStatus.SOLD) ||
-            (bulkForm.currentStatus === ItemStatus.SOLD &&
-              bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE)) && (
-            <div className="space-y-2">
-              <Label htmlFor="customer">
-                {bulkForm.newStatus === ItemStatus.SOLD
-                  ? "Customer *"
-                  : "Customer Returning Items *"}
-              </Label>
+          <div className="space-y-2">
+            <Label htmlFor="customer">
+              {bulkForm.operationType === "sale"
+                ? "Customer *"
+                : "Customer Returning Items *"}
+            </Label>
               <Select
                 value={bulkForm.saleTo}
                 onValueChange={(value) =>
@@ -555,17 +541,18 @@ export function BulkUpdateItemsModal({
                   ))}
                 </SelectContent>
               </Select>
-              {bulkForm.newStatus === ItemStatus.WITH_EMPLOYEE && (
+              {bulkForm.operationType === "return" && (
                 <p className="text-sm text-blue-600">
                   Only items originally sold to this customer can be returned.
                 </p>
               )}
             </div>
-          )}
 
           {/* Add Item Section */}
           <div className="border rounded-lg p-4 bg-gray-50">
-            <Label className="font-medium mb-3 block">Add Item to Bill</Label>
+            <Label className="font-medium mb-3 block">
+              Add Item to {bulkForm.operationType === "sale" ? "Bill" : "Returns"}
+            </Label>
             <div className="space-y-4">
               <div>
                 <Select
@@ -597,18 +584,14 @@ export function BulkUpdateItemsModal({
                     getAvailableCount(type._id, bulkForm.currentStatus) > 0
                 ).length === 0 && (
                   <p className="text-sm text-gray-500 mt-2">
-                    No items available for{" "}
-                    {bulkForm.currentStatus === ItemStatus.WITH_EMPLOYEE
-                      ? "selling"
-                      : "returns"}
+                    No items available for {bulkForm.operationType === "sale" ? "selling" : "returns"}
                   </p>
                 )}
               </div>
 
               <Button onClick={addBillingItem} className="w-full" size="lg">
                 <Plus className="h-4 w-4 mr-2" />
-                Add to{" "}
-                {bulkForm.newStatus === ItemStatus.SOLD ? "Bill" : "Returns"}
+                Add to {bulkForm.operationType === "sale" ? "Bill" : "Returns"}
               </Button>
             </div>
           </div>
@@ -617,9 +600,7 @@ export function BulkUpdateItemsModal({
           {bulkForm.billingItems.length > 0 && (
             <div className="space-y-4">
               <h3 className="font-medium text-lg">
-                {bulkForm.newStatus === ItemStatus.SOLD
-                  ? "Bill Items"
-                  : "Return Items"}
+                {bulkForm.operationType === "sale" ? "Bill Items" : "Return Items"}
               </h3>
 
               {bulkForm.billingItems.map((item, itemIndex) => (
@@ -673,7 +654,7 @@ export function BulkUpdateItemsModal({
                   />
 
                   {/* Total Price for Sales */}
-                  {bulkForm.newStatus === ItemStatus.SOLD && (
+                  {bulkForm.operationType === "sale" && (
                     <div className="mt-4 pt-4 border-t">
                       <Label className="font-medium">
                         Total Price for {item.itemTypeName}
@@ -703,7 +684,7 @@ export function BulkUpdateItemsModal({
               ))}
 
               {/* Grand Total */}
-              {bulkForm.newStatus === ItemStatus.SOLD &&
+              {bulkForm.operationType === "sale" &&
                 bulkForm.billingItems.length > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <div className="flex justify-between items-center">
@@ -746,7 +727,7 @@ export function BulkUpdateItemsModal({
             {bulkUpdateMutation.isPending && (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             )}
-            {bulkForm.newStatus === ItemStatus.SOLD
+            {bulkForm.operationType === "sale"
               ? "Complete Sale"
               : "Process Returns"}
           </Button>
