@@ -46,7 +46,7 @@ export function QuantitySelector({
                 {subItem.quantityType === "individual" ? (
                   <div className="flex items-center gap-3">
                     <Label className="text-sm font-medium min-w-[100px]">
-                      Individual:
+                      Unit:
                     </Label>
                     <Input
                       type="number"
@@ -102,7 +102,7 @@ export function QuantitySelector({
             onClick={() => onAddSubItem("individual")}
           >
             <Plus className="h-4 w-4 mr-1" />
-            Individual
+            Unit
           </Button>
           {availableGroupings.map((group) => (
             <Button
