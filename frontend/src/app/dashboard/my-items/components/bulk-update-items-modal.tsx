@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Dialog,
   DialogContent,
@@ -555,30 +556,26 @@ export function BulkUpdateItemsModal({
             </Label>
             <div className="space-y-4">
               <div>
-                <Select
+                <SearchableSelect
                   value={selectedItemType}
                   onValueChange={onItemTypeSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select item type to add" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {itemTypes
-                      .filter((type) => {
-                        // Only show item types that the employee has items for in the current status
-                        const availableCount = getAvailableCount(
-                          type._id,
-                          bulkForm.currentStatus
-                        );
-                        return availableCount > 0;
-                      })
-                      .map((type) => (
-                        <SelectItem key={type._id} value={type._id}>
-                          {type.name} ({getAvailableCountBreakdown(type._id, bulkForm.currentStatus)} available)
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Select item type to add"
+                  searchPlaceholder="Search item types..."
+                  options={itemTypes
+                    .filter((type) => {
+                      // Only show item types that the employee has items for in the current status
+                      const availableCount = getAvailableCount(
+                        type._id,
+                        bulkForm.currentStatus
+                      );
+                      return availableCount > 0;
+                    })
+                    .map((type) => ({
+                      value: type._id,
+                      label: `${type.name} (${getAvailableCountBreakdown(type._id, bulkForm.currentStatus)} available)`
+                    }))}
+                  emptyMessage="No item types available for this operation"
+                />
                 {itemTypes.filter(
                   (type) =>
                     getAvailableCount(type._id, bulkForm.currentStatus) > 0

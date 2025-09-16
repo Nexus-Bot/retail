@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Dialog,
   DialogContent,
@@ -253,18 +254,17 @@ export function BulkOperationsModal({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="itemType">Item Type</Label>
-              <Select value={selectedItemType} onValueChange={onItemTypeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select item type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {itemTypes.map((type) => (
-                    <SelectItem key={type._id} value={type._id}>
-                      {type.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={selectedItemType}
+                onValueChange={onItemTypeChange}
+                placeholder="Select item type"
+                searchPlaceholder="Search item types..."
+                options={itemTypes.map((type) => ({
+                  value: type._id,
+                  label: type.name
+                }))}
+                emptyMessage="No item types found"
+              />
             </div>
 
             {/* Current Status Summary */}

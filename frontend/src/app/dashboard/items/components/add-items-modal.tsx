@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Package, Loader2 } from 'lucide-react';
 import { CreateItemsRequest } from '@/types/api';
@@ -155,23 +155,18 @@ export function AddItemsModal({ isOpen, onClose }: AddItemsModalProps) {
           {/* Item Type */}
           <div className="space-y-2">
             <Label htmlFor="itemTypeId">Item Type *</Label>
-            <Select value={formData.itemTypeId} onValueChange={handleItemTypeChange} disabled={createItemsMutation.isPending || itemTypesLoading}>
-              <SelectTrigger>
-                <SelectValue placeholder={itemTypesLoading ? "Loading item types..." : "Select item type"} />
-              </SelectTrigger>
-              <SelectContent>
-                {itemTypes.map((type) => (
-                  <SelectItem key={type._id} value={type._id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-                {itemTypes.length === 0 && !itemTypesLoading && (
-                  <SelectItem value="" disabled>
-                    No item types available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={formData.itemTypeId}
+              onValueChange={handleItemTypeChange}
+              disabled={createItemsMutation.isPending || itemTypesLoading}
+              placeholder={itemTypesLoading ? "Loading item types..." : "Select item type"}
+              searchPlaceholder="Search item types..."
+              options={itemTypes.map((type) => ({
+                value: type._id,
+                label: type.name
+              }))}
+              emptyMessage={itemTypes.length === 0 && !itemTypesLoading ? "No item types available" : "No matching item types found"}
+            />
             {!itemTypesLoading && itemTypes.length === 0 && (
               <p className="text-sm text-yellow-600">
                 No item types found. Create one first from the dashboard.
